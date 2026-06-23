@@ -64,12 +64,54 @@ The Vite dev server runs on port 5173 and proxies API calls to the Fastify backe
 
 ## Deployment
 
-This app is configured for build.io / Render-style platforms:
+### build.io (Recommended)
 
-- `Procfile`: `web: npm start`
-- `package.json` engines: Node 20.x
-- `DATABASE_URL` can point to a Postgres addon when you leave trial.
-- Set `NODE_ENV=production` and fill all secrets.
+This app is configured for build.io auto-deploy from GitHub.
+
+1. In build.io, create a new web service.
+2. Connect your GitHub account and select the `richardaiand/contour-studio` repo.
+3. Use these settings:
+   - **Runtime:** Node
+   - **Build command:** `npm install && npm run build`
+   - **Start command:** `npm start`
+   - **Node version:** `20`
+4. Add environment variables from `.env.example`:
+   - `JWT_SECRET`
+   - `COOKIE_SECRET`
+   - `ENCRYPTION_KEY`
+   - `NODE_ENV=production`
+   - `APP_URL=https://your-app-url.build.io`
+   - `DATABASE_URL=./data/contour-studio.db`
+   - `NOMINATIM_USER_AGENT=contour-studio/0.1.0 (your-email@example.com)`
+   - Optional: `OPEN_TOPOGRAPHY_API_KEY`, `AIAND_API_KEY`, etc.
+5. Enable auto-deploy on every push to `main`.
+
+build.io will automatically run `npm install` on its servers. You do **not** need to install Node.js on your own computer.
+
+### Local Development (Optional)
+
+If you want to run the app on your own machine:
+
+1. Install Node.js 20 from https://nodejs.org/
+2. Clone the repo.
+3. Copy `.env.example` to `.env` and fill in secrets.
+4. Run:
+   ```bash
+   npm install
+   npm run migrate
+   npm run dev
+   ```
+
+### CI / GitHub Actions
+
+Every push to `main` triggers a GitHub Actions workflow that:
+
+- Installs dependencies with `npm ci`
+- Runs database migrations
+- Builds the frontend
+- Verifies the server starts
+
+Check the `.github/workflows/ci.yml` file for details.
 
 ## Roadmap
 

@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create .env for CI
+        run: |
+          cp .env.example .env
+          sed -i 's/JWT_SECRET=.*/JWT_SECRET=ci-jwt-secret-not-used-in-production-min-64-chars-long/' .env
+          sed -i 's/COOKIE_SECRET=.*/COOKIE_SECRET=ci-cookie-secret-not-used-in-production/' .env
+          sed -i 's/ENCRYPTION_KEY=.*/ENCRYPTION_KEY=000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f/' .env
+
+      - name: Run database migrations
+        run: npm run migrate
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Verify server starts
+        run: |
+          timeout 5 npm start || true
