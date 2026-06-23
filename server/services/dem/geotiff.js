@@ -20,8 +20,9 @@ export async function parseGeoTiff(arrayBuffer) {
     noData = Number(gdalNoData);
   }
 
-  const data = await image.readRasters({ interleave: true });
-  const values = data[0] ?? data;
+  const data = await image.readRasters();
+  // readRasters returns an array of bands; DEMs are typically single-band.
+  const values = Array.isArray(data) ? data[0] : data;
 
   const grid = [];
   for (let y = 0; y < height; y++) {
