@@ -2,6 +2,7 @@ import { setTimeout } from 'timers/promises';
 import { claimPendingJob, updateJob } from './db.js';
 import { fetchDemForBounds, selectSourceDescription } from '../dem/router.js';
 import { gridToMesh } from '../terrain/mesh.js';
+import { createProjectFromJob } from '../projects/db.js';
 
 const PROCESSORS = {
   'terrain:generate': processTerrainJob,
@@ -71,10 +72,12 @@ async function processTerrainJob(job, setProgress) {
   const mesh = gridToMesh(dem.grid, bounds, { verticalExaggeration });
 
   setProgress(95);
+  const projectId = createProjectFromJob(job, dem, mesh);
   await updateJob(job.id, {
     status: 'completed',
     progress: 100,
     result: {
+      projectId,
       detailLevel,
       resolutionMeters: dem.resolutionMeters,
       minElevation: mesh.minElevation,

@@ -2,6 +2,7 @@ import { $, api } from '../utils.js';
 import { store, setStatus } from '../store/index.js';
 import { setTerrain, getTerrainMesh } from './viewport.js';
 import { computeBounds } from './map.js';
+import { loadProjects } from './projects.js';
 
 export function initTerrain() {
   $('searchBtn').addEventListener('click', searchAddress);
@@ -74,10 +75,11 @@ async function generateTerrain() {
     setStatus('Generating terrain…', '');
     const data = await pollJob(jobId);
 
-    store.set({ currentTerrain: data });
+    store.set({ currentTerrain: data, currentProject: { id: data.projectId } });
     setTerrain(data.mesh);
     updateStats(data);
     setStatus(`${data.sourceDescription || 'Terrain'} · ${data.resolutionMeters}m resolution`, 'ok');
+    loadProjects();
   } catch (e) {
     setStatus('Generation failed: ' + e.message, 'error');
   } finally {
@@ -165,7 +167,7 @@ async function exportTerrain(format) {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mesh: terrain.mesh, format, filename }),
+      body: JSON.stringify({ mesh: terrain.mesh, format, filename, projectId: terrain.projectId }),
     });
 
     if (!res.ok) throw new Error(`Export ${res.status}`);

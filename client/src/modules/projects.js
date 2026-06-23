@@ -1,5 +1,6 @@
 import { $, api, escapeHtml } from '../utils.js';
 import { store, setStatus } from '../store/index.js';
+import { setBounds } from './map.js';
 
 export function initProjects() {
   $('newProjectBtn').addEventListener('click', createProject);
@@ -43,6 +44,10 @@ export async function selectProject(project) {
   try {
     const data = await api(`/projects/${project.id}`);
     store.set({ currentProject: data.project });
+    if (data.project.bounds) {
+      store.set({ bounds: data.project.bounds, center: data.project.center });
+      setBounds(data.project.bounds);
+    }
     setStatus(`Loaded ${data.project.title}`, 'ok');
   } catch (e) {
     setStatus('Failed to load project: ' + e.message, 'error');

@@ -1,6 +1,7 @@
 import { fetchDemForBounds, selectSourceDescription, DETAIL_CONFIG } from '../services/dem/router.js';
 import { gridToMesh } from '../services/terrain/mesh.js';
 import { exportMesh } from '../services/terrain/exporter.js';
+import { recordExport } from '../services/projects/db.js';
 import { AppError } from '../errors.js';
 
 export default async function (fastify) {
@@ -78,8 +79,20 @@ export default async function (fastify) {
       },
     },
   }, async (req, reply) => {
-    const { mesh, format, filename = 'terrain' } = req.body;
+    const { mesh, format, filename = 'terrain', projectId } = req.body;
     const result = exportMesh(mesh, format, filename);
+
+    if (req.user?.userId) {
+      const sizeBytes = Buffer.isBuffer(result.data) ? result.data.length : Buffer.byteLength(result.data, 'utf8');
+      recordExport({
+        userId: req.user.userId,
+        projectId,
+        format,
+        filename: result.filename,
+        sizeBytes,
+      });
+    }
+
     reply.header('Content-Disposition', `attachment; filename="${result.filename}"`);
     reply.header('Content-Type', result.type);
     return reply.send(result.data);
