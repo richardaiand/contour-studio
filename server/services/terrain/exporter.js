@@ -88,6 +88,7 @@ function toHeightmapPng(mesh) {
       const elevation = grid[y][x];
       const t = maxElevation > minElevation
         ? (elevation - minElevation) / (maxElevation - minElevation)
+        : 0;
       const gray = Math.round(clamp(t, 0, 1) * 255);
       png.data[idx] = gray;
       png.data[idx + 1] = gray;
