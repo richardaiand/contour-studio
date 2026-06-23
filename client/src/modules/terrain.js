@@ -26,6 +26,9 @@ export function initTerrain() {
     btn.addEventListener('click', () => exportTerrain(btn.dataset.export));
   });
 
+  // Map upload
+  $('mapUpload').addEventListener('change', analyzeMapUpload);
+
   store.subscribe((state) => {
     const hasTerrain = !!state.currentTerrain;
     document.querySelectorAll('.exports button').forEach((b) => (b.disabled = !hasTerrain));
@@ -105,6 +108,40 @@ async function pollJob(jobId) {
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function analyzeMapUpload(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  setStatus(`Analyzing ${file.name}…`, '');
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await fetch('/api/maps/analyze', {
+      method: 'POST',
+      credentials: 'same-origin',
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: `HTTP ${res.status}` }));
+      throw new Error(err.message);
+    }
+
+    const data = await res.json();
+    store.set({ currentMapAnalysis: data.analysis });
+
+    const interval = data.analysis?.contourIntervalMeters
+      ? `${data.analysis.contourIntervalMeters}m contour interval`
+      : 'no contour interval detected';
+    setStatus(`Map analyzed: ${data.analysis?.title || file.name} · ${interval}`, 'ok');
+  } catch (e) {
+    setStatus('Map analysis failed: ' + e.message, 'error');
+  } finally {
+    e.target.value = '';
+  }
 }
 
 function updateStats(data) {

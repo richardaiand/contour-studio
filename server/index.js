@@ -1,4 +1,5 @@
 import Fastify from 'fastify';
+import multipart from '@fastify/multipart';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { config, isProduction } from './config.js';
@@ -14,6 +15,7 @@ import terrainRoutes from './routes/terrain.js';
 import catalogRoutes from './routes/catalog.js';
 import chatRoutes from './routes/chat.js';
 import jobRoutes from './routes/jobs.js';
+import mapRoutes from './routes/maps.js';
 import { startWorker } from './services/jobs/worker.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -33,6 +35,14 @@ async function buildServer() {
   // Security, CORS, cookies, rate limiting
   await fastify.register(securityPlugin);
 
+  // Multipart file uploads
+  await fastify.register(multipart, {
+    limits: {
+      fileSize: 10 * 1024 * 1024,
+      files: 1,
+    },
+  });
+
   // Auth hook
   await fastify.register(authPlugin);
 
@@ -47,6 +57,7 @@ async function buildServer() {
   await fastify.register(catalogRoutes, { prefix: '/api/catalog' });
   await fastify.register(chatRoutes, { prefix: '/api/chat' });
   await fastify.register(jobRoutes, { prefix: '/api/jobs' });
+  await fastify.register(mapRoutes, { prefix: '/api/maps' });
 
   // Health check
   fastify.get('/health', async () => ({ status: 'ok', version: '0.1.0' }));
