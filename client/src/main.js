@@ -24,6 +24,7 @@ async function init() {
   store.subscribe((state) => {
     if (state.user) loadProjects();
   });
+  if (store.get('user')) loadProjects();
 
   setStatus('Ready. Search for a location to begin.', '');
 }
