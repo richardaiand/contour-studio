@@ -5,11 +5,11 @@ AI-powered 3D terrain visualization from addresses, DEM databases, and topograph
 ## What It Does
 
 - Search for a location by address.
-- Fetch elevation data from free sources (USGS 3DEP, OpenTopography, Open-Meteo fallback).
+- Fetch elevation data from OpenTopography (global DEM including USGS lidar) or Open-Meteo (free fallback).
 - Generate an interactive 3D terrain mesh in the browser.
-- Export to OBJ or STL.
-- Upload topographic maps for AI-assisted contour extraction (hybrid CV + vision LLM).
-- Save projects with server-side accounts.
+- Export to OBJ, STL, or grayscale heightmap PNG.
+- Upload topographic maps for AI-assisted analysis with vision-capable models.
+- Save projects and export history with server-side accounts.
 
 ## Tech Stack
 
@@ -50,17 +50,24 @@ The Vite dev server runs on port 5173 and proxies API calls to the Fastify backe
 | `COOKIE_SECRET` | Yes | Long random string |
 | `ENCRYPTION_KEY` | Yes | 64-char hex string (32 bytes) |
 | `DATABASE_URL` | Yes | SQLite path or Postgres URL |
-| `OPEN_TOPOGRAPHY_API_KEY` | No | Free from portal.opentopography.org |
-| `AIAND_API_KEY` | No | Required for uploaded-map AI analysis |
-| `OPENAI_API_KEY` | No | Optional vision provider |
+| `NODE_ENV` | Yes for deploy | Set to `production` on build.io |
+| `APP_URL` | Yes for deploy | Public URL of the deployed app |
+| `OPEN_TOPOGRAPHY_API_KEY` | No | Free from portal.opentopography.org for real DEM data |
+| `AIAND_API_KEY` | No | AIand provider key for map analysis |
+| `OPENAI_API_KEY` | No | OpenAI key for map analysis |
+| `ANTHROPIC_API_KEY` | No | Anthropic key (use via OpenRouter or OpenAI-compatible proxy) |
+| `OPENROUTER_API_KEY` | No | OpenRouter key for map analysis |
+| `NOMINATIM_USER_AGENT` | No | Required by Nominatim; include contact info |
 
 ## Detail Levels
 
-| Level | Database Source | Upload Analysis |
-|-------|----------------|-----------------|
-| **Draft** | 30 m global DEM | Fast CV only |
-| **Standard** | 10 m DEM where available | CV + legend vision |
-| **Survey** | 1–3 m lidar / cross-reference | Full vision + OCR |
+Terrain generation runs as an async job so large downloads don't time out.
+
+| Level | Database Source | Grid Size |
+|-------|-----------------|-----------|
+| **Draft** | SRTM 90 m global DEM | 128 × 128 |
+| **Standard** | SRTM 30 m global DEM | 256 × 256 |
+| **Survey** | USGS 1 m lidar (US only) or SRTM 30 m fallback | 512 × 512 |
 
 ## Deployment
 
@@ -115,11 +122,12 @@ Check the `.github/workflows/ci.yml` file for details.
 
 ## Roadmap
 
-- [ ] Full GeoTIFF raster parsing with geotiff.js
-- [ ] USGS WCS raster download
-- [ ] Async job queue for long uploads
-- [ ] AI contour extraction pipeline
+- [x] Full GeoTIFF raster parsing with geotiff.js
+- [x] OpenTopography global DEM download (includes USGS lidar)
+- [x] Async job queue for terrain generation
+- [x] AI vision map analysis pipeline
+- [x] Heightmap PNG export with proper encoding
 - [ ] Local topographic map catalog direct downloads
-- [ ] Heightmap PNG export with proper encoding
 - [ ] GLB export
 - [ ] Scene enhancement (trees, water, buildings)
+- [ ] PDF-to-image conversion for map uploads
