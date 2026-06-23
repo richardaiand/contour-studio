@@ -1,0 +1,97 @@
+import { setTimeout } from 'timers/promises';
+import { claimPendingJob, updateJob } from './db.js';
+import { fetchDemForBounds, selectSourceDescription } from '../dem/router.js';
+import { gridToMesh } from '../terrain/mesh.js';
+
+const PROCESSORS = {
+  'terrain:generate': processTerrainJob,
+};
+
+let running = false;
+
+export function startWorker() {
+  if (running) return;
+  running = true;
+  console.log('Starting async job worker');
+  loop().catch((err) => {
+    console.error('Job worker crashed:', err);
+    running = false;
+  });
+}
+
+export function stopWorker() {
+  running = false;
+}
+
+async function loop() {
+  while (running) {
+    try {
+      const job = claimPendingJob();
+      if (job) {
+        await runJob(job);
+      }
+    } catch (err) {
+      console.error('Worker loop error:', err);
+    }
+    await setTimeout(1000);
+  }
+}
+
+async function runJob(job) {
+  const processor = PROCESSORS[job.type];
+  if (!processor) {
+    await updateJob(job.id, { status: 'failed', error: `Unknown job type: ${job.type}` });
+    return;
+  }
+
+  try {
+    console.log(`Processing job ${job.id} (${job.type})`);
+    await processor(job, (progress) => updateJob(job.id, { progress }));
+  } catch (err) {
+    console.error(`Job ${job.id} failed:`, err);
+    await updateJob(job.id, {
+      status: 'failed',
+      progress: 100,
+      error: err.message || 'Unknown error',
+    });
+  }
+}
+
+async function processTerrainJob(job, setProgress) {
+  const { bounds, detailLevel = 'standard', verticalExaggeration = 1.5 } = job.payload;
+
+  setProgress(10);
+  const dem = await fetchDemForBounds(bounds, detailLevel);
+
+  setProgress(60);
+  if (!dem.grid || dem.grid.length === 0) {
+    throw new Error('DEM grid was empty');
+  }
+
+  const mesh = gridToMesh(dem.grid, bounds, { verticalExaggeration });
+
+  setProgress(95);
+  await updateJob(job.id, {
+    status: 'completed',
+    progress: 100,
+    result: {
+      detailLevel,
+      resolutionMeters: dem.resolutionMeters,
+      minElevation: mesh.minElevation,
+      maxElevation: mesh.maxElevation,
+      verticalExaggeration,
+      sources: dem.sources,
+      sourceDescription: selectSourceDescription(dem.sources, detailLevel),
+      attribution: dem.attribution,
+      mesh: {
+        width: mesh.width,
+        height: mesh.height,
+        positions: mesh.positions,
+        normals: mesh.normals,
+        uvs: mesh.uvs,
+        colors: mesh.colors,
+        indices: mesh.indices,
+      },
+    },
+  });
+}

@@ -58,25 +58,53 @@ async function generateTerrain() {
   }
 
   store.set({ isGenerating: true });
-  setStatus('Fetching elevation data…', '');
+  setStatus('Queueing terrain generation…', '');
   document.querySelectorAll('.exports button').forEach((b) => (b.disabled = true));
 
   try {
     const detailLevel = store.get('detail');
-    const data = await api('/terrain/generate', {
+    const { jobId } = await api('/jobs/terrain', {
       method: 'POST',
       body: JSON.stringify({ bounds, detailLevel, verticalExaggeration: 1.5 }),
     });
 
+    setStatus('Generating terrain…', '');
+    const data = await pollJob(jobId);
+
     store.set({ currentTerrain: data });
     setTerrain(data.mesh);
     updateStats(data);
-    setStatus(`${data.sourceDescription} · ${data.resolutionMeters}m resolution`, 'ok');
+    setStatus(`${data.sourceDescription || 'Terrain'} · ${data.resolutionMeters}m resolution`, 'ok');
   } catch (e) {
     setStatus('Generation failed: ' + e.message, 'error');
   } finally {
     store.set({ isGenerating: false });
   }
+}
+
+async function pollJob(jobId) {
+  const start = Date.now();
+  const maxWait = 5 * 60 * 1000; // 5 minutes
+
+  while (Date.now() - start < maxWait) {
+    const job = await api(`/jobs/${jobId}`);
+
+    if (job.status === 'completed') {
+      return job.result;
+    }
+    if (job.status === 'failed') {
+      throw new Error(job.error || 'Job failed');
+    }
+
+    setStatus(`Generating terrain… ${job.progress}%`, '');
+    await sleep(1500);
+  }
+
+  throw new Error('Terrain generation timed out');
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function updateStats(data) {

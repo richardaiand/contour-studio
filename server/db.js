@@ -39,6 +39,7 @@ export function runMigrations() {
 
   const migrations = [
     { id: '001_init', file: resolve('migrations/001_init.sql') },
+    { id: '002_jobs_payload', file: resolve('migrations/002_jobs_payload.sql') },
   ];
 
   for (const migration of migrations) {

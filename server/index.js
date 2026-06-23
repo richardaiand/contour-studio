@@ -13,6 +13,8 @@ import geocodeRoutes from './routes/geocode.js';
 import terrainRoutes from './routes/terrain.js';
 import catalogRoutes from './routes/catalog.js';
 import chatRoutes from './routes/chat.js';
+import jobRoutes from './routes/jobs.js';
+import { startWorker } from './services/jobs/worker.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -44,6 +46,7 @@ async function buildServer() {
   await fastify.register(terrainRoutes, { prefix: '/api/terrain' });
   await fastify.register(catalogRoutes, { prefix: '/api/catalog' });
   await fastify.register(chatRoutes, { prefix: '/api/chat' });
+  await fastify.register(jobRoutes, { prefix: '/api/jobs' });
 
   // Health check
   fastify.get('/health', async () => ({ status: 'ok', version: '0.1.0' }));
@@ -69,6 +72,7 @@ async function start() {
     const fastify = await buildServer();
     const address = await fastify.listen({ port: config.port, host: '0.0.0.0' });
     fastify.log.info(`Server listening on ${address}`);
+    startWorker();
   } catch (err) {
     console.error('Startup error:', err);
     process.exit(1);
