@@ -62,8 +62,9 @@ async function generateTerrain() {
   }
 
   store.set({ isGenerating: true });
-  setStatus('Queueing terrain generation…', '');
-  document.querySelectorAll('.exports button').forEach((b) => (b.disabled = true));
+    setStatus('Queueing terrain generation…', '');
+    setProgress(0, true);
+    document.querySelectorAll('.exports button').forEach((b) => (b.disabled = true));
 
   try {
     const detailLevel = store.get('detail');
@@ -78,13 +79,23 @@ async function generateTerrain() {
     store.set({ currentTerrain: data, currentProject: { id: data.projectId } });
     setTerrain(data.mesh);
     updateStats(data);
+    setProgress(100, false);
     setStatus(`${data.sourceDescription || 'Terrain'} · ${data.resolutionMeters}m resolution`, 'ok');
     loadProjects();
   } catch (e) {
+    setProgress(0, false);
     setStatus('Generation failed: ' + e.message, 'error');
   } finally {
     store.set({ isGenerating: false });
   }
+}
+
+function setProgress(percent, visible) {
+  const bar = $('progressBar');
+  const fill = $('progressFill');
+  if (!bar || !fill) return;
+  bar.style.display = visible ? 'block' : 'none';
+  fill.style.width = `${Math.max(0, Math.min(100, percent))}%`;
 }
 
 async function pollJob(jobId) {
@@ -102,6 +113,7 @@ async function pollJob(jobId) {
     }
 
     setStatus(`Generating terrain… ${job.progress}%`, '');
+    setProgress(job.progress);
     await sleep(1500);
   }
 
