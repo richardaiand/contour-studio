@@ -128,6 +128,19 @@ async function analyzeMapUpload(e) {
   const file = e.target.files?.[0];
   if (!file) return;
 
+  if (!store.get('user')) {
+    setStatus('Sign in to analyze uploaded maps.', 'error');
+    e.target.value = '';
+    return;
+  }
+
+  const MAX_SIZE = 10 * 1024 * 1024;
+  if (file.size > MAX_SIZE) {
+    setStatus('File too large. Maximum is 10MB.', 'error');
+    e.target.value = '';
+    return;
+  }
+
   setStatus(`Analyzing ${file.name}…`, '');
   try {
     const formData = new FormData();
