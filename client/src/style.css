@@ -221,13 +221,26 @@ html, body {
 }
 
 .rotation-handle {
-  width: 18px;
-  height: 18px;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: #3b82f6;
   border: 2px solid #fff;
   border-radius: 50%;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
   cursor: grab;
+}
+
+.rotation-handle svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .rotation-handle:active {
