@@ -5,16 +5,22 @@ const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
 const AUTH_TAG_LENGTH = 16;
 
+function hasValidKey() {
+  const key = (config.encryptionKey || '').replace(/\s/g, '');
+  return key.length === 64 && /^[0-9a-fA-F]+$/.test(key);
+}
+
 function getKeyBuffer() {
-  const key = config.encryptionKey.replace(/\s/g, '');
-  if (key.length !== 64) {
-    throw new Error('ENCRYPTION_KEY must be a 64-character hex string (32 bytes)');
-  }
+  const key = (config.encryptionKey || '').replace(/\s/g, '');
   return Buffer.from(key, 'hex');
 }
 
 export function encrypt(text) {
   if (!text) return '';
+  // If no valid encryption key, store plain text (prefixed so decrypt knows)
+  if (!hasValidKey()) {
+    return `plain:${text}`;
+  }
   const iv = crypto.randomBytes(IV_LENGTH);
   const cipher = crypto.createCipheriv(ALGORITHM, getKeyBuffer(), iv);
   const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
@@ -24,6 +30,10 @@ export function encrypt(text) {
 
 export function decrypt(encryptedText) {
   if (!encryptedText) return '';
+  // Plain text fallback (no encryption key configured)
+  if (encryptedText.startsWith('plain:')) {
+    return encryptedText.slice(6);
+  }
   const [ivHex, authTagHex, encryptedHex] = encryptedText.split(':');
   if (!ivHex || !authTagHex || !encryptedHex) throw new Error('Invalid encrypted value format');
   const decipher = crypto.createDecipheriv(
