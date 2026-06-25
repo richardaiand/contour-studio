@@ -49,9 +49,19 @@ export function initMap() {
     zoom: 3,
     scrollZoom: { smooth: true, speed: 0.6 },
     touchZoomRotate: true,
+    dragRotate: true,
+    pitchWithRotate: false,
+    maxPitch: 0,
   });
 
-  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  map.addControl(new maplibregl.NavigationControl({ showCompass: false, visualizePitch: false }), 'top-right');
+
+  // Interrupt any fitBounds animation when the user interacts
+  const stopAnimation = () => { if (map.isMoving()) map.stop(); };
+  map.on('wheel', stopAnimation);
+  map.on('mousedown', stopAnimation);
+  map.on('touchstart', stopAnimation);
+  map.on('dragstart', stopAnimation);
 
   map.on('error', (e) => {
     console.error('Map error:', e.error);
@@ -119,8 +129,13 @@ export function initMap() {
       if (!center) return;
       const local = lonLatToLocalMeters(center, e.lngLat.lat, e.lngLat.lng);
       const angle = Math.atan2(local.dy, local.dx);
-      // Handle sits at -90° (top) in local coords; subtract that so dragging the handle sets rotation.
-      const rotation = ((angle * 180) / Math.PI + 90 + 360) % 360;
+      const target = ((angle * 180) / Math.PI + 90 + 360) % 360;
+      // Smooth toward target for less jittery rotation
+      const current = store.get('rotation') || 0;
+      let diff = target - current;
+      if (diff > 180) diff -= 360;
+      if (diff < -180) diff += 360;
+      const rotation = ((current + diff * 0.4) % 360 + 360) % 360;
       setRotation(rotation);
       return;
     }
@@ -143,6 +158,12 @@ export function initMap() {
       isRotating = false;
       ignoreNextClick = true;
       if (rotationHandle) rotationHandle.getElement().style.cursor = 'grab';
+      // Snap to nearest 0/90/180/270 if within 7 degrees
+      const rotation = store.get('rotation') || 0;
+      const nearest = Math.round(rotation / 90) * 90;
+      if (Math.abs(rotation - nearest) <= 7) {
+        setRotation(nearest);
+      }
       setTimeout(() => {
         ignoreNextClick = false;
       }, 100);
