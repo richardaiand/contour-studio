@@ -240,10 +240,16 @@ export function setMarker(center, updateStore = true, shouldZoom = true) {
           [bounds.minLon, bounds.minLat],
           [bounds.maxLon, bounds.maxLat],
         ],
-        { padding: 80, maxZoom: 17, duration: 600 }
+        { padding: proportionalPadding(), maxZoom: 19, duration: 600 }
       );
     }
   }
+}
+
+function proportionalPadding() {
+  const canvas = map.getCanvas();
+  const minDim = Math.min(canvas.clientWidth, canvas.clientHeight);
+  return Math.round(minDim * 0.2);
 }
 
 function createRotationHandle(center, sizeMeters, rotation) {
@@ -494,7 +500,7 @@ export function setBounds(bounds) {
       [bounds.minLon, bounds.minLat],
       [bounds.maxLon, bounds.maxLat],
     ],
-    { padding: 40 }
+    { padding: proportionalPadding(), maxZoom: 19, duration: 600 }
   );
   const center = { lat: (bounds.minLat + bounds.maxLat) / 2, lon: (bounds.minLon + bounds.maxLon) / 2 };
   updateSelection(center, false, false);
