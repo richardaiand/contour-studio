@@ -1,7 +1,7 @@
 import { $, api } from '../utils.js';
 import { store, setStatus } from '../store/index.js';
 import { setTerrain, getTerrainMesh } from './viewport.js';
-import { computeBounds } from './map.js';
+import { computeBounds, getCenter } from './map.js';
 import { loadProjects } from './projects.js';
 
 let suggestionIndex = -1;
@@ -23,6 +23,19 @@ export function initTerrain() {
       store.set({ detail: btn.dataset.value });
     });
   });
+
+  // Area size selector
+  const areaSize = $('areaSize');
+  if (areaSize) {
+    areaSize.addEventListener('change', () => {
+      const center = store.get('center') || getCenter();
+      if (center) {
+        const sizeMeters = Number(areaSize.value);
+        const bounds = computeBounds(center, sizeMeters);
+        store.set({ sizeMeters, bounds });
+      }
+    });
+  }
 
   // Exports
   document.querySelectorAll('.exports button').forEach((btn) => {
@@ -190,7 +203,9 @@ async function generateTerrain() {
     setTerrain(data.mesh);
     updateStats(data);
     setProgress(100, false);
-    setStatus(`${data.sourceDescription || 'Terrain'} · ${data.resolutionMeters}m resolution`, 'ok');
+    const size = store.get('sizeMeters') || 1000;
+    const sizeLabel = size < 1000 ? `${size} m` : size === 1000 ? '1 km' : '1 mile';
+    setStatus(`${data.sourceDescription || 'Terrain'} · ${sizeLabel}² · ${data.resolutionMeters}m resolution`, 'ok');
     loadProjects();
   } catch (e) {
     setProgress(0, false);
@@ -284,7 +299,10 @@ async function analyzeMapUpload(e) {
 function updateStats(data) {
   const stats = $('stats');
   const range = (data.maxElevation - data.minElevation).toFixed(1);
+  const size = store.get('sizeMeters') || 1000;
+  const sizeLabel = size < 1000 ? `${size} m` : size === 1000 ? '1 km' : '1 mile';
   stats.innerHTML = `
+    <b>${sizeLabel} × ${sizeLabel}</b> area ·
     <b>${data.mesh.width} × ${data.mesh.height}</b> vertices ·
     <b>${range}</b> m range ·
     <b>${data.verticalExaggeration}×</b> vertical exaggeration

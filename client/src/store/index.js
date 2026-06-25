@@ -39,6 +39,7 @@ export const store = new Store({
   currentTerrain: null,
   bounds: null,
   center: null,
+  sizeMeters: 1000,
   isGenerating: false,
   status: '',
   statusKind: '',

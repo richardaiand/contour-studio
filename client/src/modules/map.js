@@ -5,11 +5,7 @@ import { store } from '../store/index.js';
 
 let map;
 let marker;
-let selectionSource;
-let selectionLayer;
 let isDraggingMarker = false;
-
-const AREA_SIZE_METERS = 1000;
 
 export function initMap() {
   map = new maplibregl.Map({
@@ -76,8 +72,6 @@ export function initMap() {
         'line-dasharray': [2, 2],
       },
     });
-
-
   });
 
   map.on('click', (e) => {
@@ -88,8 +82,14 @@ export function initMap() {
   });
 
   store.subscribe((state) => {
-    if (state.center && (!marker || marker.getLngLat().lat !== state.center.lat || marker.getLngLat().lng !== state.center.lon)) {
-      setMarker(state.center, false);
+    if (state.center) {
+      const current = marker ? marker.getLngLat() : null;
+      const moved = !current || Math.abs(current.lat - state.center.lat) > 1e-9 || Math.abs(current.lng - state.center.lon) > 1e-9;
+      if (moved) {
+        setMarker(state.center, false);
+      } else {
+        updateSelection(state.center, false);
+      }
     }
   });
 
@@ -123,21 +123,40 @@ export function setMarker(center, updateStore = true) {
   });
 
   updateSelection(center, updateStore);
-  map.flyTo({ center: [center.lon, center.lat], zoom: Math.max(map.getZoom(), 14) });
+  map.flyTo({ center: [center.lon, center.lat], zoom: Math.max(map.getZoom(), fitZoomForSize()) });
+}
+
+function getSizeMeters() {
+  const value = $('areaSize')?.value;
+  const meters = value ? Number(value) : 1000;
+  return Number.isFinite(meters) && meters > 0 ? meters : 1000;
+}
+
+function getSizeLabel() {
+  const option = $('areaSize')?.selectedOptions?.[0];
+  return option?.dataset?.label || `${getSizeMeters()} m × ${getSizeMeters()} m`;
+}
+
+function fitZoomForSize() {
+  const meters = getSizeMeters();
+  if (meters <= 100) return 17;
+  if (meters <= 500) return 15;
+  if (meters <= 1000) return 14;
+  return 12;
 }
 
 function updateSelection(center, updateStore = true) {
-  const bounds = computeBounds(center, AREA_SIZE_METERS);
+  const sizeMeters = getSizeMeters();
+  const bounds = computeBounds(center, sizeMeters);
   if (updateStore) {
-    store.set({ center, bounds });
+    store.set({ center, bounds, sizeMeters });
   }
   updateSelectionLayer(bounds);
 }
 
 function updateSelectionLayer(bounds) {
   if (!map || !map.getSource('selection')) return;
-  const polygon = polygonFromBounds(bounds);
-  map.getSource('selection').setData(polygon);
+  map.getSource('selection').setData(polygonFromBounds(bounds));
 }
 
 function emptyPolygon() {

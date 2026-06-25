@@ -45,6 +45,16 @@
               <button data-value="survey">Survey</button>
             </div>
           </div>
+          <div class="detail-selector">
+            <label>Area</label>
+            <select id="areaSize" class="full">
+              <option value="64" data-label="1 acre (~64 m)">1 acre</option>
+              <option value="100" data-label="100 m × 100 m">100 m</option>
+              <option value="500" data-label="500 m × 500 m">500 m</option>
+              <option value="1000" selected data-label="1 km × 1 km">1 km</option>
+              <option value="1609" data-label="1 mile × 1 mile">1 mile</option>
+            </select>
+          </div>
           <button id="generateBtn" class="primary full" disabled>Generate Terrain</button>
           <div id="progressBar" class="progress-bar" style="display:none;">
             <div id="progressFill" class="progress-fill"></div>
