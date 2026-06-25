@@ -43,6 +43,8 @@ export function initMap() {
     },
     center: [-98.5795, 39.8283],
     zoom: 3,
+    scrollZoom: { smooth: true, speed: 0.6 },
+    touchZoomRotate: true,
   });
 
   map.on('error', (e) => {
