@@ -14,6 +14,6 @@ export function initTheme() {
 }
 
 function applyTheme(theme) {
-  document.body.setAttribute('data-theme', theme);
+  document.documentElement.setAttribute('data-theme', theme);
   document.getElementById('themeBtn').textContent = theme === 'dark' ? '☀️' : '🌙';
 }
