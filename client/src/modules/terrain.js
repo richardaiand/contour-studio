@@ -84,27 +84,10 @@ async function handleAddressInput(e) {
 }
 
 async function fetchSuggestions(query) {
-  const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=5`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('Photon error');
+  const res = await fetch(`/api/geocode/autocomplete?q=${encodeURIComponent(query)}`);
+  if (!res.ok) throw new Error('Autocomplete error');
   const data = await res.json();
-
-  return data.features.map((f) => ({
-    name: formatPhotonLabel(f.properties),
-    lat: f.geometry.coordinates[1],
-    lon: f.geometry.coordinates[0],
-    bbox: f.properties.extent,
-  }));
-}
-
-function formatPhotonLabel(props) {
-  const parts = [];
-  if (props.name) parts.push(props.name);
-  if (props.street && props.street !== props.name) parts.push(props.street);
-  if (props.city) parts.push(props.city);
-  if (props.state) parts.push(props.state);
-  if (props.country) parts.push(props.country);
-  return parts.join(', ');
+  return data.results || [];
 }
 
 function renderSuggestions() {

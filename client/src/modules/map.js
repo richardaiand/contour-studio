@@ -1,14 +1,16 @@
 import maplibregl from 'maplibre-gl';
 import { $ } from '../utils.js';
-import { store, setStatus } from '../store/index.js';
+import { store } from '../store/index.js';
 
 let map;
 let marker;
-let selectionRect;
+let selectionSource;
+let selectionLayer;
+let isDraggingMarker = false;
+
+const AREA_SIZE_METERS = 1000;
 
 export function initMap() {
-  const lightTheme = store.get('theme') === 'light';
-
   map = new maplibregl.Map({
     container: 'map',
     style: {
@@ -35,13 +37,45 @@ export function initMap() {
     zoom: 3,
   });
 
+  map.on('load', () => {
+    map.addSource('selection', {
+      type: 'geojson',
+      data: emptyPolygon(),
+    });
+
+    map.addLayer({
+      id: 'selection-fill',
+      type: 'fill',
+      source: 'selection',
+      paint: {
+        'fill-color': '#3b82f6',
+        'fill-opacity': 0.12,
+      },
+    });
+
+    map.addLayer({
+      id: 'selection-outline',
+      type: 'line',
+      source: 'selection',
+      paint: {
+        'line-color': '#3b82f6',
+        'line-width': 2,
+        'line-dasharray': [2, 2],
+      },
+    });
+
+
+  });
+
   map.on('click', (e) => {
+    if (isDraggingMarker) return;
     const { lng, lat } = e.lngLat;
     setMarker({ lat, lon: lng });
+    reverseGeocode(lat, lng);
   });
 
   store.subscribe((state) => {
-    if (state.center && state.center !== selectionRect) {
+    if (state.center && (!marker || marker.getLngLat().lat !== state.center.lat || marker.getLngLat().lng !== state.center.lon)) {
       setMarker(state.center, false);
     }
   });
@@ -53,22 +87,93 @@ export function setMarker(center, updateStore = true) {
   if (!map) return;
 
   if (marker) marker.remove();
-  marker = new maplibregl.Marker().setLngLat([center.lon, center.lat]).addTo(map);
 
+  const el = document.createElement('div');
+  el.className = 'map-marker';
+  el.innerHTML = '<div class="marker-pin"></div>';
+
+  marker = new maplibregl.Marker({
+    element: el,
+    draggable: true,
+  })
+    .setLngLat([center.lon, center.lat])
+    .addTo(map);
+
+  marker.on('dragstart', () => {
+    isDraggingMarker = true;
+  });
+
+  marker.on('dragend', () => {
+    const { lng, lat } = marker.getLngLat();
+    updateSelection({ lat, lon: lng });
+    isDraggingMarker = false;
+  });
+
+  updateSelection(center, updateStore);
+  map.flyTo({ center: [center.lon, center.lat], zoom: Math.max(map.getZoom(), 14) });
+}
+
+function updateSelection(center, updateStore = true) {
+  const bounds = computeBounds(center, AREA_SIZE_METERS);
   if (updateStore) {
-    const bounds = computeBounds(center, 1000);
     store.set({ center, bounds });
   }
+  updateSelectionLayer(bounds);
+}
 
-  map.flyTo({ center: [center.lon, center.lat], zoom: 14 });
+function updateSelectionLayer(bounds) {
+  if (!map || !map.getSource('selection')) return;
+  const polygon = polygonFromBounds(bounds);
+  map.getSource('selection').setData(polygon);
+}
+
+function emptyPolygon() {
+  return polygonFromBounds({ minLon: 0, minLat: 0, maxLon: 0, maxLat: 0 });
+}
+
+function polygonFromBounds(bounds) {
+  const { minLon, minLat, maxLon, maxLat } = bounds;
+  return {
+    type: 'Feature',
+    geometry: {
+      type: 'Polygon',
+      coordinates: [
+        [
+          [minLon, minLat],
+          [maxLon, minLat],
+          [maxLon, maxLat],
+          [minLon, maxLat],
+          [minLon, minLat],
+        ],
+      ],
+    },
+    properties: {},
+  };
+}
+
+async function reverseGeocode(lat, lon) {
+  try {
+    const res = await fetch(`/api/geocode/reverse?lat=${lat}&lon=${lon}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.displayName) {
+      $('addressInput').value = data.displayName;
+    }
+  } catch (e) {
+    // ignore reverse geocode failures
+  }
 }
 
 export function setBounds(bounds) {
   if (!map || !bounds) return;
   map.fitBounds(
-    [[bounds.minLon, bounds.minLat], [bounds.maxLon, bounds.maxLat]],
+    [
+      [bounds.minLon, bounds.minLat],
+      [bounds.maxLon, bounds.maxLat],
+    ],
     { padding: 40 }
   );
+  updateSelectionLayer(bounds);
 }
 
 export function getCenter() {

@@ -1,6 +1,36 @@
-import { geocodeAddress, computeBounds } from '../services/geocode.js';
+import { geocodeAddress, autocompleteAddress, reverseGeocode, computeBounds } from '../services/geocode.js';
 
 export default async function (fastify) {
+  fastify.get('/autocomplete', {
+    schema: {
+      querystring: {
+        type: 'object',
+        required: ['q'],
+        properties: {
+          q: { type: 'string', minLength: 1 },
+        },
+      },
+    },
+  }, async (req) => {
+    const results = await autocompleteAddress(req.query.q);
+    return { results };
+  });
+
+  fastify.get('/reverse', {
+    schema: {
+      querystring: {
+        type: 'object',
+        required: ['lat', 'lon'],
+        properties: {
+          lat: { type: 'number' },
+          lon: { type: 'number' },
+        },
+      },
+    },
+  }, async (req) => {
+    return reverseGeocode(req.query.lat, req.query.lon);
+  });
+
   fastify.post('/', {
     schema: {
       body: {
