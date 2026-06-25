@@ -16,6 +16,12 @@ function requireEnv(key) {
   return value;
 }
 
+// Validate encryption key format early so API-key save failures are obvious.
+const rawEncryptionKey = requireEnv('ENCRYPTION_KEY').replace(/\s/g, '');
+if (rawEncryptionKey.length !== 64 || !/^[0-9a-fA-F]+$/.test(rawEncryptionKey)) {
+  throw new Error('ENCRYPTION_KEY must be a 64-character hex string (32 bytes). Example: openssl rand -hex 32');
+}
+
 export const config = {
   env: getEnv('NODE_ENV', 'development'),
   port: parseInt(getEnv('PORT', '3000'), 10),
@@ -23,7 +29,7 @@ export const config = {
   databaseUrl: getEnv('DATABASE_URL', './data/contour-studio.db'),
   jwtSecret: requireEnv('JWT_SECRET'),
   cookieSecret: requireEnv('COOKIE_SECRET'),
-  encryptionKey: requireEnv('ENCRYPTION_KEY'),
+  encryptionKey: rawEncryptionKey,
   requestTimeout: parseInt(getEnv('REQUEST_TIMEOUT_MS', '120000'), 10),
   rateLimit: {
     max: parseInt(getEnv('RATE_LIMIT_MAX', '100'), 10),

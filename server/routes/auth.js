@@ -67,8 +67,19 @@ export default async function (fastify) {
       values.push(providerModel);
     }
     if (apiKey !== undefined) {
+      let encrypted;
+      try {
+        encrypted = apiKey ? encrypt(apiKey) : null;
+      } catch (err) {
+        return reply.status(500).send({
+          error: {
+            code: 'ENCRYPTION_ERROR',
+            message: err.message || 'Failed to encrypt API key. Check server ENCRYPTION_KEY config.',
+          },
+        });
+      }
       updates.push('encrypted_api_key = ?');
-      values.push(apiKey ? encrypt(apiKey) : null);
+      values.push(encrypted);
     }
     if (theme !== undefined) {
       updates.push('theme = ?');

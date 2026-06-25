@@ -194,6 +194,20 @@ html, body {
   text-align: right;
 }
 
+.model-select {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.model-select select {
+  width: 100%;
+}
+
+.model-select input {
+  width: 100%;
+}
+
 .map-marker {
   width: 28px;
   height: 28px;
