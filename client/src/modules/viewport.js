@@ -3,7 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { $ } from '../utils.js';
 import { store } from '../store/index.js';
 
-let renderer, scene, camera, controls, terrainMesh;
+let renderer, scene, camera, controls, terrainMesh, gridHelper;
 
 export function initViewport() {
   const canvas = $('scene');
@@ -12,8 +12,6 @@ export function initViewport() {
   renderer.setSize(canvas.clientWidth, canvas.clientHeight);
 
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0d1016);
-  scene.fog = new THREE.Fog(0x0d1016, 100, 500);
 
   camera = new THREE.PerspectiveCamera(50, canvas.clientWidth / canvas.clientHeight, 0.1, 5000);
   camera.position.set(0, 400, 600);
@@ -33,13 +31,41 @@ export function initViewport() {
   dir2.position.set(-100, 100, -100);
   scene.add(dir2);
 
-  const grid = new THREE.GridHelper(1000, 40, 0x2a3344, 0x1a2030);
-  scene.add(grid);
+  gridHelper = new THREE.GridHelper(1000, 40);
+  scene.add(gridHelper);
+
+  applyThemeColors();
+  store.subscribe((state) => {
+    applyThemeColors(state.theme);
+  });
 
   window.addEventListener('resize', resize);
   animate();
 
   return { renderer, scene, camera, controls };
+}
+
+function applyThemeColors(theme = store.get('theme')) {
+  if (!scene) return;
+
+  const bg = cssColor('--bg');
+  const border = cssColor('--panel-border');
+  const muted = cssColor('--muted');
+
+  scene.background = new THREE.Color(bg);
+  scene.fog = new THREE.Fog(bg, 100, 500);
+
+  if (gridHelper) {
+    gridHelper.material.color = new THREE.Color(border);
+    // GridHelper uses the same color for both main and sub lines in newer Three.js,
+    // but we can tint the material to a muted version for sub lines if supported.
+  }
+}
+
+function cssColor(name) {
+  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  if (!value) return 0x0d1016;
+  return new THREE.Color(value).getHex();
 }
 
 export function setTerrain(meshData) {

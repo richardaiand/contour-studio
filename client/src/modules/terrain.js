@@ -4,11 +4,13 @@ import { setTerrain, getTerrainMesh } from './viewport.js';
 import { computeBounds } from './map.js';
 import { loadProjects } from './projects.js';
 
+let suggestionIndex = -1;
+let suggestions = [];
+
 export function initTerrain() {
   $('searchBtn').addEventListener('click', searchAddress);
-  $('addressInput').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') searchAddress();
-  });
+  $('addressInput').addEventListener('keydown', handleInputKey);
+  $('addressInput').addEventListener('input', debounce(handleAddressInput, 250));
 
   $('generateBtn').addEventListener('click', generateTerrain);
 
@@ -37,9 +39,126 @@ export function initTerrain() {
   });
 }
 
+function handleInputKey(e) {
+  const list = $('searchSuggestions');
+  if (!list.classList.contains('active')) {
+    if (e.key === 'Enter') searchAddress();
+    return;
+  }
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    suggestionIndex = Math.min(suggestionIndex + 1, suggestions.length - 1);
+    renderSuggestions();
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    suggestionIndex = Math.max(suggestionIndex - 1, -1);
+    renderSuggestions();
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (suggestionIndex >= 0 && suggestions[suggestionIndex]) {
+      selectSuggestion(suggestions[suggestionIndex]);
+    } else {
+      searchAddress();
+      hideSuggestions();
+    }
+  } else if (e.key === 'Escape') {
+    hideSuggestions();
+  }
+}
+
+async function handleAddressInput(e) {
+  const query = e.target.value.trim();
+  if (query.length < 3) {
+    hideSuggestions();
+    return;
+  }
+
+  try {
+    suggestions = await fetchSuggestions(query);
+    suggestionIndex = -1;
+    renderSuggestions();
+  } catch (err) {
+    hideSuggestions();
+  }
+}
+
+async function fetchSuggestions(query) {
+  const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=5`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Photon error');
+  const data = await res.json();
+
+  return data.features.map((f) => ({
+    name: formatPhotonLabel(f.properties),
+    lat: f.geometry.coordinates[1],
+    lon: f.geometry.coordinates[0],
+    bbox: f.properties.extent,
+  }));
+}
+
+function formatPhotonLabel(props) {
+  const parts = [];
+  if (props.name) parts.push(props.name);
+  if (props.street && props.street !== props.name) parts.push(props.street);
+  if (props.city) parts.push(props.city);
+  if (props.state) parts.push(props.state);
+  if (props.country) parts.push(props.country);
+  return parts.join(', ');
+}
+
+function renderSuggestions() {
+  const list = $('searchSuggestions');
+  if (suggestions.length === 0) {
+    hideSuggestions();
+    return;
+  }
+
+  list.innerHTML = '';
+  suggestions.forEach((s, i) => {
+    const div = document.createElement('div');
+    div.className = 'suggestion-item' + (i === suggestionIndex ? ' active' : '');
+    div.textContent = s.name;
+    div.addEventListener('click', () => selectSuggestion(s));
+    list.appendChild(div);
+  });
+
+  list.classList.add('active');
+}
+
+function hideSuggestions() {
+  const list = $('searchSuggestions');
+  list.classList.remove('active');
+  list.innerHTML = '';
+  suggestions = [];
+  suggestionIndex = -1;
+}
+
+function selectSuggestion(s) {
+  $('addressInput').value = s.name;
+  hideSuggestions();
+  geocodeFromSuggestion(s);
+}
+
+async function geocodeFromSuggestion(s) {
+  setStatus('Geocoding address…', '');
+  try {
+    const body = { address: s.name, sizeMeters: 1000, lat: s.lat, lon: s.lon, bbox: s.bbox };
+    const data = await api('/geocode', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+    store.set({ center: data.center, bounds: data.bounds });
+    setStatus(`Found: ${data.displayName}`, 'ok');
+  } catch (e) {
+    setStatus(e.message, 'error');
+  }
+}
+
 async function searchAddress() {
   const address = $('addressInput').value.trim();
   if (!address) return;
+  hideSuggestions();
 
   setStatus('Geocoding address…', '');
   try {
@@ -52,6 +171,14 @@ async function searchAddress() {
   } catch (e) {
     setStatus(e.message, 'error');
   }
+}
+
+function debounce(fn, ms) {
+  let t;
+  return (...args) => {
+    clearTimeout(t);
+    t = setTimeout(() => fn(...args), ms);
+  };
 }
 
 async function generateTerrain() {

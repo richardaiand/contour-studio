@@ -32,7 +32,10 @@
         <div class="panel">
           <h2>Location</h2>
           <div class="input-group">
-            <input id="addressInput" type="text" placeholder="Enter an address or place..." />
+            <div class="autocomplete">
+              <input id="addressInput" type="text" placeholder="Enter an address or place..." autocomplete="off" />
+              <div id="searchSuggestions" class="suggestions"></div>
+            </div>
             <button id="searchBtn" class="primary">Search</button>
           </div>
           <div class="detail-selector">
