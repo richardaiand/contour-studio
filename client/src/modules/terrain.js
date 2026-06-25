@@ -225,7 +225,7 @@ async function generateTerrain() {
     setStatus('Generating terrain…', '');
     const data = await pollJob(jobId);
 
-    store.set({ currentTerrain: data, currentProject: { id: data.projectId } });
+    store.set({ currentTerrain: data, currentProject: { id: data.projectId, title: data.projectTitle } });
     setTerrain(data.mesh);
     updateStats(data);
     setProgress(100, false);

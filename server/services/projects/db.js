@@ -35,7 +35,7 @@ export function createProjectFromJob(job, dem, mesh) {
     createdAt
   );
 
-  return id;
+  return { id, title };
 }
 
 export function recordExport({ userId, projectId, format, filename, sizeBytes }) {

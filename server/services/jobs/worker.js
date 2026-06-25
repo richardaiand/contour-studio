@@ -89,12 +89,13 @@ async function processTerrainJob(job, setProgress) {
   const mesh = gridToMesh(dem.grid, bounds, { verticalExaggeration });
 
   setProgress(95);
-  const projectId = createProjectFromJob(job, dem, mesh);
+  const project = createProjectFromJob(job, dem, mesh);
   await updateJob(job.id, {
     status: 'completed',
     progress: 100,
     result: {
-      projectId,
+      projectId: project.id,
+      projectTitle: project.title,
       detailLevel,
       resolutionMeters: dem.resolutionMeters,
       minElevation: mesh.minElevation,

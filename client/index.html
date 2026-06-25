@@ -18,7 +18,7 @@
           <small>AI terrain · 3D site models</small>
         </div>
       </div>
-      <div class="spacer"></div>
+      <div class="project-title" id="projectTitle">No project</div>
       <div class="header-actions">
         <button id="themeBtn" class="ghost" title="Toggle theme">🌙</button>
         <button id="settingsBtn" class="ghost">Settings</button>
@@ -27,64 +27,59 @@
     </header>
 
     <main class="app-main">
-      <aside class="sidebar">
-        <div class="panel">
-          <h2>Location</h2>
-          <div class="input-group">
-            <div class="autocomplete">
-              <input id="addressInput" type="text" placeholder="Enter an address or place..." autocomplete="off" />
-              <div id="searchSuggestions" class="suggestions"></div>
+      <aside class="sidebar" id="sidebar">
+        <button id="sidebarToggle" class="panel-toggle" title="Collapse sidebar">‹</button>
+        <div class="sidebar-content">
+          <div class="panel">
+            <h2>Location</h2>
+            <div class="input-group">
+              <div class="autocomplete">
+                <input id="addressInput" type="text" placeholder="Enter an address or place..." autocomplete="off" />
+                <div id="searchSuggestions" class="suggestions"></div>
+              </div>
+              <button id="searchBtn" class="primary">Search</button>
             </div>
-            <button id="searchBtn" class="primary">Search</button>
-          </div>
-          <div class="detail-selector">
-            <label>Detail</label>
-            <div class="segmented" id="detailSelector">
-              <button data-value="draft" title="Fast preview (~90 m resolution, global)">Draft</button>
-              <button data-value="standard" class="active" title="Good detail (~30 m resolution, global)">Standard</button>
-              <button data-value="survey" title="High-res lidar (~1 m, requires OpenTopography key, US only)">Survey</button>
+            <div class="detail-selector">
+              <label>Detail</label>
+              <div class="segmented" id="detailSelector">
+                <button data-value="draft" title="Fast preview (~90 m resolution, global)">Draft</button>
+                <button data-value="standard" class="active" title="Good detail (~30 m resolution, global)">Standard</button>
+                <button data-value="survey" title="High-res lidar (~1 m, requires OpenTopography key, US only)">Survey</button>
+              </div>
             </div>
-          </div>
-          <div class="detail-selector">
-            <label>Area</label>
-            <div class="area-inputs">
-              <input id="areaValue" type="number" min="0.01" max="10" step="0.01" value="1" />
-              <select id="areaUnit">
-                <option value="km">km</option>
-                <option value="m">m</option>
-                <option value="mi">miles</option>
-                <option value="ft">ft</option>
-                <option value="acre">acres</option>
-              </select>
+            <div class="detail-selector">
+              <label>Area</label>
+              <div class="area-inputs">
+                <input id="areaValue" type="number" min="0.01" max="10" step="0.01" value="1" />
+                <select id="areaUnit">
+                  <option value="km">km</option>
+                  <option value="m">m</option>
+                  <option value="mi">miles</option>
+                  <option value="ft">ft</option>
+                  <option value="acre">acres</option>
+                </select>
+              </div>
             </div>
+
+            <button id="generateBtn" class="primary full" disabled>Generate Terrain</button>
+            <div id="progressBar" class="progress-bar" style="display:none;">
+              <div id="progressFill" class="progress-fill"></div>
+            </div>
+            <div id="status" class="status"></div>
           </div>
 
-          <button id="generateBtn" class="primary full" disabled>Generate Terrain</button>
-          <div id="progressBar" class="progress-bar" style="display:none;">
-            <div id="progressFill" class="progress-fill"></div>
+          <div class="panel">
+            <h2>Upload Map</h2>
+            <p class="hint">Upload a topographic map to analyze contours.</p>
+            <input id="mapUpload" type="file" accept="image/*,.pdf" />
+            <button id="analyzeBtn" class="secondary full" disabled>Analyze Map</button>
           </div>
-          <div id="status" class="status"></div>
-        </div>
 
-        <div class="panel">
-          <h2>Upload Map</h2>
-          <p class="hint">Upload a topographic map to analyze contours.</p>
-          <input id="mapUpload" type="file" accept="image/*,.pdf" />
-          <button id="analyzeBtn" class="secondary full" disabled>Analyze Map</button>
-        </div>
-
-        <div class="panel">
-          <h2>Projects</h2>
-          <button id="newProjectBtn" class="sm primary">+ New</button>
-          <div id="projectList" class="project-list">
-            <div class="hint">Sign in to save projects.</div>
-          </div>
-        </div>
-
-        <div class="panel">
-          <h2>Exports</h2>
-          <div id="exportList" class="project-list">
-            <div class="hint">Sign in to see export history.</div>
+          <div class="panel">
+            <h2>Exports</h2>
+            <div id="exportList" class="project-list">
+              <div class="hint">Sign in to see export history.</div>
+            </div>
           </div>
         </div>
       </aside>
@@ -103,6 +98,19 @@
           </div>
         </div>
       </section>
+
+      <aside class="projects-panel" id="projectsPanel">
+        <button id="projectsToggle" class="panel-toggle" title="Collapse projects">›</button>
+        <div class="projects-content">
+          <div class="panel">
+            <h2>Projects</h2>
+            <button id="newProjectBtn" class="sm primary">+ New</button>
+            <div id="projectList" class="project-list">
+              <div class="hint">Sign in to save projects.</div>
+            </div>
+          </div>
+        </div>
+      </aside>
     </main>
   </div>
 

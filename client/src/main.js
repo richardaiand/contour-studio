@@ -26,6 +26,20 @@ async function init() {
   });
   if (store.get('user')) loadProjects();
 
+  store.subscribe((state) => {
+    const titleEl = $('projectTitle');
+    if (!titleEl) return;
+    titleEl.textContent = state.currentProject?.title || 'No project';
+  });
+
+  $('sidebarToggle')?.addEventListener('click', () => {
+    $('sidebar')?.classList.toggle('collapsed');
+  });
+
+  $('projectsToggle')?.addEventListener('click', () => {
+    $('projectsPanel')?.classList.toggle('collapsed');
+  });
+
   setStatus('Ready. Search for a location to begin.', '');
 }
 
