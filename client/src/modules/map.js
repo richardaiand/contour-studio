@@ -354,7 +354,8 @@ function createRotationHandle(center, sizeMeters, rotation) {
 
 function handlePosition(center, sizeMeters, rotation) {
   const half = sizeMeters / 2;
-  const distance = half + HANDLE_DISTANCE_METERS;
+  const offset = Math.max(15, sizeMeters * 0.2);
+  const distance = half + offset;
   const rad = (rotation * Math.PI) / 180;
   // Handle sits at top (north) when rotation=0, rotates with the box
   const dx = distance * Math.sin(rad);
