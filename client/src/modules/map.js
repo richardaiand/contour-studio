@@ -16,7 +16,7 @@ let ignoreNextClick = false;
 const METERS_PER_DEGREE_LAT = 111320;
 const MAX_SIZE_METERS = 10000;
 const MIN_SIZE_METERS = 10;
-const HANDLE_DISTANCE_METERS = 40;
+const HANDLE_DISTANCE_METERS = 80;
 
 export function initMap() {
   map = new maplibregl.Map({
@@ -444,7 +444,8 @@ function lonLatToLocalMeters(center, lat, lon) {
 
 function rotatedSquare(center, sizeMeters, rotationDegrees) {
   const half = sizeMeters / 2;
-  const rotation = (rotationDegrees * Math.PI) / 180;
+  // Negate rotation so the box rotates in the same direction as the handle
+  const rotation = (-rotationDegrees * Math.PI) / 180;
   const cosR = Math.cos(rotation);
   const sinR = Math.sin(rotation);
 
