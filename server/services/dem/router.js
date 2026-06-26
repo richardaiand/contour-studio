@@ -14,11 +14,20 @@ export async function fetchDemForBounds(bounds, detailLevel = 'standard') {
   const detail = DETAIL_CONFIG[detailLevel] || DETAIL_CONFIG.standard;
   const errors = [];
 
+  // Ensure minimum area size for API compatibility
+  // OpenTopography requires at least ~0.01 km², Open-Meteo needs spacing
+  const minSpan = 0.001; // ~100m minimum degrees
+  const adjustedBounds = {
+    minLat: Math.min(bounds.minLat, bounds.maxLat - minSpan),
+    maxLat: Math.max(bounds.maxLat, bounds.minLat + minSpan),
+    minLon: Math.min(bounds.minLon, bounds.maxLon - minSpan),
+    maxLon: Math.max(bounds.maxLon, bounds.minLon + minSpan),
+  };
+
   // 1. Try OpenTopography global DEM if key is configured
-  //    Includes SRTM (global) and USGS 1m/10m (US) datasets.
   if (config.dem.openTopographyKey) {
     try {
-      const data = await opentopography.fetchDem(bounds, detail);
+      const data = await opentopography.fetchDem(adjustedBounds, detail);
       return {
         ...data,
         detailLevel,
@@ -31,7 +40,7 @@ export async function fetchDemForBounds(bounds, detailLevel = 'standard') {
 
   // 2. Fallback to Open-Meteo (free, no key)
   try {
-    const data = await openmeteo.fetchElevation(bounds, detail);
+    const data = await openmeteo.fetchElevation(adjustedBounds, detail);
     return {
       ...data,
       detailLevel,
