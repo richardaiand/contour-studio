@@ -85,6 +85,22 @@ function createNorthArrow() {
   const ring = new THREE.Mesh(ringGeo, ringMat);
   northArrow.add(ring);
 
+  const labelCanvas = document.createElement('canvas');
+  labelCanvas.width = 128;
+  labelCanvas.height = 128;
+  const ctx = labelCanvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 72px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('N', 64, 60);
+  const texture = new THREE.CanvasTexture(labelCanvas);
+  const labelMat = new THREE.MeshBasicMaterial({ map: texture, transparent: true, side: THREE.DoubleSide });
+  const labelGeo = new THREE.PlaneGeometry(0.6, 0.6);
+  const label = new THREE.Mesh(labelGeo, labelMat);
+  label.position.set(0, 0, 0);
+  northArrow.add(label);
+
   northArrow.rotation.x = -Math.PI / 2;
   northArrow.visible = false;
   scene.add(northArrow);
@@ -110,10 +126,10 @@ function cssColor(name) {
   return new THREE.Color(value).getHex();
 }
 
-export function setTerrain(meshData) {
+export function setTerrain(meshData, rotationDeg = 0) {
   const canvas = $('scene');
   if (!canvas || canvas.clientWidth === 0 || canvas.clientHeight === 0) {
-    setTimeout(() => setTerrain(meshData), 100);
+    setTimeout(() => setTerrain(meshData, rotationDeg), 100);
     return;
   }
   if (!renderer || !scene) {
@@ -171,6 +187,8 @@ export function setTerrain(meshData) {
       box.min.y + 1,
       box.min.z + arrowScale * 0.5
     );
+    northArrow.rotation.x = -Math.PI / 2;
+    northArrow.rotation.z = -rotationDeg * Math.PI / 180;
     northArrow.visible = true;
   }
 

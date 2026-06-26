@@ -258,9 +258,10 @@ async function generateTerrain() {
     const data = await pollJob(jobId);
 
     store.set({ currentTerrain: data, currentProject: { id: data.projectId, title: data.projectTitle } });
+    const rotation = store.get('rotation') || 0;
     navigate('studio');
     requestAnimationFrame(() => {
-      setTerrain(data.mesh);
+      setTerrain(data.mesh, rotation);
       if (data.originalBounds && data.fetchBounds) {
         drawSelectionOutline(data.originalBounds, data.fetchBounds);
       }
