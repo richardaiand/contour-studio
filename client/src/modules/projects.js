@@ -89,12 +89,16 @@ export function renderDashboard(projects) {
     const card = document.createElement('div');
     card.className = 'project-card';
     card.innerHTML = `
-      <div class="project-card-thumb">⛰️</div>
+      <div class="project-card-thumb">
+        <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m8 3 4 8 5-5 5 15H2L8 3z"/></svg>
+      </div>
       <div class="project-card-body">
         <div class="project-card-title">${escapeHtml(p.title)}</div>
         <div class="project-card-meta">
           <span>${formatDate(p.updatedAt)}</span>
-          <button class="ghost sm project-card-delete" data-id="${p.id}" title="Delete">🗑</button>
+          <button class="ghost sm project-card-delete" data-id="${p.id}" title="Delete">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
         </div>
       </div>
     `;
