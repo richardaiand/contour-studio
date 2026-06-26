@@ -2,7 +2,6 @@
 // Switches between views: login, dashboard, map, studio, walk
 
 import { store } from './store/index.js';
-import { resizeMap } from './modules/map.js';
 
 const VIEWS = ['login', 'dashboard', 'map', 'studio', 'walk'];
 let currentView = 'login';
@@ -58,7 +57,7 @@ function renderView() {
   window.dispatchEvent(new Event('resize'));
 
   if (currentView === 'map') {
-    resizeMap();
+    import('./modules/map.js').then(({ resizeMap }) => resizeMap()).catch(() => {});
   }
 
   // Studio view needs extra time for canvas to get dimensions
