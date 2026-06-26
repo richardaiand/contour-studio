@@ -58,6 +58,17 @@ async function openSettings() {
   $('model').value = settings.providerModel || '';
   $('apiKey').value = '';
 
+  const keyStatus = $('apiKeyStatus');
+  if (keyStatus) {
+    if (settings.hasApiKey) {
+      keyStatus.textContent = 'Key saved. Enter a new key to replace it.';
+      keyStatus.classList.add('saved');
+    } else {
+      keyStatus.textContent = '';
+      keyStatus.classList.remove('saved');
+    }
+  }
+
   const matchPreset = PRESETS.find((p) => p.endpoint === settings.providerEndpoint);
   if (matchPreset) {
     await applyPreset(matchPreset, false);
@@ -172,8 +183,12 @@ async function saveSettings() {
     const body = {
       providerEndpoint: $('endpoint').value.trim(),
       providerModel: model,
-      apiKey: $('apiKey').value.trim(),
     };
+
+    const apiKey = $('apiKey').value.trim();
+    if (apiKey) {
+      body.apiKey = apiKey;
+    }
 
     const data = await api('/auth/settings', {
       method: 'PATCH',

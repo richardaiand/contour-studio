@@ -998,6 +998,16 @@ dialog input {
   margin-top: 10px;
 }
 
+.api-key-status {
+  font-size: 11px;
+  margin-top: 4px;
+  color: var(--muted);
+}
+
+.api-key-status.saved {
+  color: var(--success);
+}
+
 @media (max-width: 900px) {
   .app-main {
     flex-direction: column;
