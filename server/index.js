@@ -1,6 +1,7 @@
 import Fastify from 'fastify';
 import multipart from '@fastify/multipart';
 import path from 'path';
+import { existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { config, isProduction } from './config.js';
 import { runMigrations } from './db.js';
@@ -68,20 +69,31 @@ async function buildServer() {
   if (isProduction) {
     const { default: fastifyStatic } = await import('@fastify/static');
     const clientRoot = path.join(__dirname, '../dist/client');
+
+    if (!existsSync(clientRoot)) {
+      console.error(`Client build directory not found: ${clientRoot}. Run "npm run build" first.`);
+    } else {
+      console.log(`Serving static files from ${clientRoot}`);
+    }
+
     await fastify.register(fastifyStatic, {
       root: clientRoot,
       prefix: '/',
       wildcard: false,
+      decorateReply: true,
     });
 
     fastify.setNotFoundHandler((req, reply) => {
       // If the request looks like a static asset but wasn't found, return 404
-      // instead of serving index.html so broken assets are obvious.
       if (/\.[a-zA-Z0-9]+$/.test(req.raw.url) && !req.raw.url.endsWith('.html')) {
         reply.status(404).send({ error: 'Not found' });
         return;
       }
-      reply.sendFile('index.html');
+      try {
+        reply.sendFile('index.html');
+      } catch (err) {
+        reply.type('text/html').send('<h1>Build Error</h1><p>Client files not found. The build may have failed.</p>');
+      }
     });
   }
 
