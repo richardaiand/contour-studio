@@ -83,10 +83,13 @@ export function initMap() {
     if (!isRightPanning || !rightPanStart) return;
     const dx = e.originalEvent.clientX - rightPanStart.x;
     const dy = e.originalEvent.clientY - rightPanStart.y;
-    // Convert pixel delta to degrees based on zoom level
-    const scale = 256 * Math.pow(2, map.getZoom());
-    const lngDeg = -dx / scale * 360;
-    const latDeg = dy / scale * 180;
+    // Convert pixel delta to map movement at current zoom
+    // 1:1 ratio — moving mouse 100px moves map 100px
+    const canvas = map.getCanvas();
+    const lngSpan = map.getBounds().getEast() - map.getBounds().getWest();
+    const latSpan = map.getBounds().getNorth() - map.getBounds().getSouth();
+    const lngDeg = -(dx / canvas.clientWidth) * lngSpan;
+    const latDeg = (dy / canvas.clientHeight) * latSpan;
     map.jumpTo({
       center: [
         Math.max(-180, Math.min(180, rightPanStart.center.lng + lngDeg)),
