@@ -10,139 +10,210 @@
 </head>
 <body>
   <div id="app">
-    <header class="app-header">
-      <div class="brand">
-        <span class="logo">⛰️</span>
-        <div>
-          <strong>Contour Studio</strong>
-          <small>AI terrain · 3D site models</small>
+    <!-- ===== LOGIN VIEW ===== -->
+    <section class="view view-login" id="view-login">
+      <div class="login-card">
+        <div class="brand center">
+          <span class="logo">⛰️</span>
+          <div>
+            <strong>Contour Studio</strong>
+            <small>AI terrain · 3D site models</small>
+          </div>
+        </div>
+        <p class="sub">Sign in to generate terrain models and save projects.</p>
+        <label for="authUser">Username</label>
+        <input id="authUser" type="text" autocomplete="off" placeholder="username" />
+        <label for="authPass">Password</label>
+        <input id="authPass" type="password" autocomplete="off" placeholder="password" />
+        <div id="authError" class="error-text"></div>
+        <div class="dlg-actions">
+          <button id="authSignUp" class="ghost full">Create account</button>
+          <button id="authSignIn" class="primary full">Sign in</button>
+        </div>
+        <button id="themeBtnLogin" class="ghost sm" title="Toggle theme">🌙</button>
+      </div>
+    </section>
+
+    <!-- ===== MAP VIEW ===== -->
+    <section class="view view-map hidden" id="view-map">
+      <header class="app-header">
+        <div class="brand">
+          <span class="logo">⛰️</span>
+          <div>
+            <strong>Contour Studio</strong>
+          </div>
+        </div>
+        <div class="project-title" id="projectTitle">No project</div>
+        <div class="header-actions">
+          <button id="themeBtn" class="ghost" title="Toggle theme">🌙</button>
+          <button id="settingsBtn" class="ghost">Settings</button>
+          <button id="authBtn" class="ghost">Sign out</button>
+        </div>
+      </header>
+
+      <main class="app-main">
+        <aside class="sidebar" id="sidebar">
+          <button id="sidebarToggle" class="panel-toggle" title="Collapse sidebar">‹</button>
+          <div class="sidebar-content">
+            <div class="panel">
+              <h2>Location</h2>
+              <div class="input-group">
+                <div class="autocomplete">
+                  <input id="addressInput" type="text" placeholder="Enter an address or place..." autocomplete="off" />
+                  <div id="searchSuggestions" class="suggestions"></div>
+                </div>
+                <button id="searchBtn" class="primary">Search</button>
+              </div>
+              <div class="detail-selector">
+                <label>Detail</label>
+                <div class="segmented" id="detailSelector">
+                  <button data-value="draft" title="Fast preview (~90 m resolution, global)">Draft</button>
+                  <button data-value="standard" class="active" title="Good detail (~30 m resolution, global)">Standard</button>
+                  <button data-value="survey" title="High-res lidar (~1 m, requires OpenTopography key, US only)">Survey</button>
+                </div>
+              </div>
+              <div class="detail-selector">
+                <label>Area</label>
+                <div class="area-inputs">
+                  <input id="areaValue" type="number" min="0.01" max="10" step="0.01" value="1" />
+                  <select id="areaUnit">
+                    <option value="km">km</option>
+                    <option value="m">m</option>
+                    <option value="mi">miles</option>
+                    <option value="ft">ft</option>
+                    <option value="acre">acres</option>
+                  </select>
+                </div>
+              </div>
+
+              <button id="dropCenterBtn" class="secondary full" title="Place the box at the center of the current map view">⊕ Drop Center Here</button>
+              <button id="generateBtn" class="primary full" disabled>Generate Terrain</button>
+              <div id="progressBar" class="progress-bar" style="display:none;">
+                <div id="progressFill" class="progress-fill"></div>
+              </div>
+              <div id="status" class="status"></div>
+            </div>
+
+            <div class="panel">
+              <h2>Upload Map</h2>
+              <p class="hint">Upload a topographic map to analyze contours.</p>
+              <input id="mapUpload" type="file" accept="image/*,.pdf" />
+              <button id="analyzeBtn" class="secondary full" disabled>Analyze Map</button>
+            </div>
+
+            <div class="panel">
+              <h2>Exports</h2>
+              <div id="exportList" class="project-list">
+                <div class="hint">Sign in to see export history.</div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <section class="viewport-map">
+          <div id="map" class="map-view"></div>
+        </section>
+
+        <aside class="projects-panel" id="projectsPanel">
+          <button id="projectsToggle" class="panel-toggle" title="Collapse projects">›</button>
+          <div class="projects-content">
+            <div class="panel">
+              <h2>Projects</h2>
+              <button id="newProjectBtn" class="sm primary">+ New</button>
+              <div id="projectList" class="project-list">
+                <div class="hint">Sign in to save projects.</div>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </main>
+    </section>
+
+    <!-- ===== STUDIO VIEW ===== -->
+    <section class="view view-studio hidden" id="view-studio">
+      <header class="app-header">
+        <button id="backToMap" class="ghost" title="Back to map">← Back</button>
+        <div class="project-title" id="projectTitleStudio">No project</div>
+        <div class="header-actions">
+          <button id="themeBtnStudio" class="ghost" title="Toggle theme">🌙</button>
+          <button id="authBtnStudio" class="ghost">Sign out</button>
+        </div>
+      </header>
+
+      <main class="app-main">
+        <aside class="sidebar" id="studioSidebar">
+          <button id="studioSidebarToggle" class="panel-toggle" title="Collapse sidebar">‹</button>
+          <div class="sidebar-content">
+            <div class="panel">
+              <h2>Terrain</h2>
+              <div id="stats" class="stats">No terrain</div>
+              <div class="detail-selector">
+                <label>Exports</label>
+                <div class="exports">
+                  <input id="filename" type="text" value="terrain" placeholder="filename" />
+                  <button data-export="obj" disabled>OBJ</button>
+                  <button data-export="stl" disabled>STL</button>
+                  <button data-export="heightmap" disabled>Heightmap</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <h2>Placement</h2>
+              <p class="hint">Click an object, then click on the terrain to place it.</p>
+              <div class="object-palette" id="objectPalette">
+                <button class="object-btn" data-object="tree">🌳 Tree</button>
+                <button class="object-btn" data-object="rock">🪨 Rock</button>
+                <button class="object-btn" data-object="building">🏠 Building</button>
+                <button class="object-btn" data-object="person">🧍 Person</button>
+              </div>
+              <button id="clearObjects" class="secondary full">Clear All Objects</button>
+            </div>
+
+            <div class="panel">
+              <h2>Projects</h2>
+              <button id="newProjectBtnStudio" class="sm primary">+ New</button>
+              <div id="projectListStudio" class="project-list">
+                <div class="hint">No projects.</div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <section class="viewport-studio">
+          <canvas id="scene" class="scene-view"></canvas>
+        </section>
+      </main>
+    </section>
+
+    <!-- ===== WALK VIEW ===== -->
+    <section class="view view-walk hidden" id="view-walk">
+      <div class="walk-hud">
+        <button id="exitWalk" class="ghost" title="Exit first-person mode">← Back to Studio</button>
+        <div class="walk-controls-hint">
+          <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move</span>
+          <span><kbd>Mouse</kbd> Look</span>
+          <span><kbd>Esc</kbd> Exit</span>
         </div>
       </div>
-      <div class="project-title" id="projectTitle">No project</div>
-      <div class="header-actions">
-        <button id="themeBtn" class="ghost" title="Toggle theme">🌙</button>
-        <button id="settingsBtn" class="ghost">Settings</button>
-        <button id="authBtn" class="ghost">Sign in</button>
-      </div>
-    </header>
-
-    <main class="app-main">
-      <aside class="sidebar" id="sidebar">
-        <button id="sidebarToggle" class="panel-toggle" title="Collapse sidebar">‹</button>
-        <div class="sidebar-content">
-          <div class="panel">
-            <h2>Location</h2>
-            <div class="input-group">
-              <div class="autocomplete">
-                <input id="addressInput" type="text" placeholder="Enter an address or place..." autocomplete="off" />
-                <div id="searchSuggestions" class="suggestions"></div>
-              </div>
-              <button id="searchBtn" class="primary">Search</button>
-            </div>
-            <div class="detail-selector">
-              <label>Detail</label>
-              <div class="segmented" id="detailSelector">
-                <button data-value="draft" title="Fast preview (~90 m resolution, global)">Draft</button>
-                <button data-value="standard" class="active" title="Good detail (~30 m resolution, global)">Standard</button>
-                <button data-value="survey" title="High-res lidar (~1 m, requires OpenTopography key, US only)">Survey</button>
-              </div>
-            </div>
-            <div class="detail-selector">
-              <label>Area</label>
-              <div class="area-inputs">
-                <input id="areaValue" type="number" min="0.01" max="10" step="0.01" value="1" />
-                <select id="areaUnit">
-                  <option value="km">km</option>
-                  <option value="m">m</option>
-                  <option value="mi">miles</option>
-                  <option value="ft">ft</option>
-                  <option value="acre">acres</option>
-                </select>
-              </div>
-            </div>
-
-            <button id="dropCenterBtn" class="secondary full" title="Place the box at the center of the current map view">⊕ Drop Center Here</button>
-            <button id="generateBtn" class="primary full" disabled>Generate Terrain</button>
-            <div id="progressBar" class="progress-bar" style="display:none;">
-              <div id="progressFill" class="progress-fill"></div>
-            </div>
-            <div id="status" class="status"></div>
-          </div>
-
-          <div class="panel">
-            <h2>Upload Map</h2>
-            <p class="hint">Upload a topographic map to analyze contours.</p>
-            <input id="mapUpload" type="file" accept="image/*,.pdf" />
-            <button id="analyzeBtn" class="secondary full" disabled>Analyze Map</button>
-          </div>
-
-          <div class="panel">
-            <h2>Exports</h2>
-            <div id="exportList" class="project-list">
-              <div class="hint">Sign in to see export history.</div>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      <section class="viewport">
-        <div id="map" class="map-view"></div>
-        <canvas id="scene" class="scene-view"></canvas>
-
-        <div class="viewport-hud">
-          <div id="stats" class="stats">No terrain</div>
-          <div class="exports">
-            <input id="filename" type="text" value="terrain" placeholder="filename" />
-            <button data-export="obj" disabled>OBJ</button>
-            <button data-export="stl" disabled>STL</button>
-            <button data-export="heightmap" disabled>Heightmap</button>
-          </div>
-        </div>
-      </section>
-
-      <aside class="projects-panel" id="projectsPanel">
-        <button id="projectsToggle" class="panel-toggle" title="Collapse projects">›</button>
-        <div class="projects-content">
-          <div class="panel">
-            <h2>Projects</h2>
-            <button id="newProjectBtn" class="sm primary">+ New</button>
-            <div id="projectList" class="project-list">
-              <div class="hint">Sign in to save projects.</div>
-            </div>
-          </div>
-        </div>
-      </aside>
-    </main>
+      <canvas id="walkCanvas" class="walk-canvas"></canvas>
+    </section>
   </div>
 
-  <dialog id="authDlg">
-    <h3>Account</h3>
-    <p class="sub">Sign in to save projects and generate terrain.</p>
-    <label>Username</label>
-    <input id="authUser" type="text" autocomplete="off" placeholder="username" />
-    <label>Password</label>
-    <input id="authPass" type="password" autocomplete="off" placeholder="password" />
-    <div id="authError" class="error-text"></div>
-    <div class="dlg-actions">
-      <button id="authCancel" class="ghost">Cancel</button>
-      <button id="authSignUp" class="ghost">Create account</button>
-      <button id="authSignIn" class="primary">Sign in</button>
-    </div>
-  </dialog>
-
+  <!-- Settings dialog (shared) -->
   <dialog id="settingsDlg">
     <h3>AI Provider</h3>
     <p class="sub">Your key is encrypted on the server. It is never sent to the browser in full.</p>
-    <label>Endpoint</label>
+    <label for="endpoint">Endpoint</label>
     <input id="endpoint" type="text" placeholder="https://api.aiand.com/v1" />
-    <label>Model</label>
+    <label for="model">Model</label>
     <div class="model-select">
       <select id="modelSelect">
         <option value="custom">Custom…</option>
       </select>
       <input id="model" type="text" placeholder="deepseek-ai/deepseek-v4-pro" />
     </div>
-    <label>API key</label>
+    <label for="apiKey">API key</label>
     <input id="apiKey" type="password" placeholder="sk-..." autocomplete="off" />
     <div id="providerPresets" class="presets"></div>
     <div class="dlg-actions">

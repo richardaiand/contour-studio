@@ -3,7 +3,8 @@ import { store, setStatus } from '../store/index.js';
 import { setBounds } from './map.js';
 
 export function initProjects() {
-  $('newProjectBtn').addEventListener('click', createProject);
+  $('newProjectBtn')?.addEventListener('click', createProject);
+  $('newProjectBtnStudio')?.addEventListener('click', createProject);
 
   store.subscribe((state) => {
     renderProjectList(state.projects, state.currentProject);
@@ -63,34 +64,38 @@ export async function selectProject(project) {
 }
 
 function renderProjectList(projects, currentProject) {
-  const list = $('projectList');
+  const lists = [document.getElementById('projectList'), document.getElementById('projectListStudio')].filter(Boolean);
+  if (lists.length === 0) return;
+
   if (!store.get('user')) {
-    list.innerHTML = '<div class="hint">Sign in to save and manage projects.</div>';
+    lists.forEach(list => list.innerHTML = '<div class="hint">Sign in to save and manage projects.</div>');
     return;
   }
 
   if (projects.length === 0) {
-    list.innerHTML = '<div class="hint">No projects yet.</div>';
+    lists.forEach(list => list.innerHTML = '<div class="hint">No projects yet.</div>');
     return;
   }
 
-  list.innerHTML = '';
-  projects.forEach((p) => {
-    const item = document.createElement('div');
-    item.className = 'project-item' + (currentProject?.id === p.id ? ' active' : '');
-    item.innerHTML = `
-      <span>${escapeHtml(p.title)}</span>
-      <button class="ghost sm delete-project" data-id="${p.id}" title="Delete">×</button>
-    `;
-    item.addEventListener('click', (e) => {
-      if (e.target.closest('.delete-project')) {
-        e.stopPropagation();
-        deleteProject(p);
-      } else {
-        selectProject(p);
-      }
+  lists.forEach(list => {
+    list.innerHTML = '';
+    projects.forEach((p) => {
+      const item = document.createElement('div');
+      item.className = 'project-item' + (currentProject?.id === p.id ? ' active' : '');
+      item.innerHTML = `
+        <span>${escapeHtml(p.title)}</span>
+        <button class="ghost sm delete-project" data-id="${p.id}" title="Delete">×</button>
+      `;
+      item.addEventListener('click', (e) => {
+        if (e.target.closest('.delete-project')) {
+          e.stopPropagation();
+          deleteProject(p);
+        } else {
+          selectProject(p);
+        }
+      });
+      list.appendChild(item);
     });
-    list.appendChild(item);
   });
 }
 

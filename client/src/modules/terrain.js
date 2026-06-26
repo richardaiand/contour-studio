@@ -3,6 +3,7 @@ import { store, setStatus } from '../store/index.js';
 import { setTerrain, getTerrainMesh } from './viewport.js';
 import { computeBounds, getCenter, getMapCenter, sizeMetersFromInputs, getAreaInputs, formatSizeLabel, unitLimits } from './map.js';
 import { loadProjects } from './projects.js';
+import { navigate } from '../router.js';
 
 let suggestionIndex = -1;
 let suggestions = [];
@@ -242,6 +243,7 @@ async function generateTerrain() {
     const sizeLabel = formatSizeLabel();
     setStatus(`${data.sourceDescription || 'Terrain'} · ${sizeLabel} · ${data.resolutionMeters}m resolution`, 'ok');
     loadProjects();
+    navigate('studio');
   } catch (e) {
     setProgress(0, false);
     setStatus('Generation failed: ' + e.message, 'error');

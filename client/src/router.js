@@ -1,7 +1,5 @@
 // Simple client-side router for multi-page layout
-// TODO: Switch between views: login, map, studio, walk
-// TODO: Back button navigation
-// TODO: Session-based initial route
+// Switches between views: login, map, studio, walk
 
 import { store } from './store/index.js';
 
@@ -10,29 +8,51 @@ let currentView = 'login';
 let navigationHistory = [];
 
 export function initRouter() {
-  // TODO: Show/hide view sections based on currentView
-  // TODO: Set initial view based on session
+  // Wire up navigation buttons
+  document.getElementById('backToMap')?.addEventListener('click', () => goBack());
+  document.getElementById('exitWalk')?.addEventListener('click', () => goBack());
+
+  // Subscribe to store view changes
+  store.subscribe((state) => {
+    if (state.currentView && state.currentView !== currentView) {
+      currentView = state.currentView;
+      renderView();
+    }
+  });
 }
 
 export function navigate(view) {
   if (!VIEWS.includes(view)) return;
-  if (currentView) navigationHistory.push(currentView);
+  if (view === currentView) return;
+  navigationHistory.push(currentView);
   currentView = view;
   renderView();
+  store.set({ currentView: view });
 }
 
 export function goBack() {
-  if (navigationHistory.length === 0) return;
-  currentView = navigationHistory.pop();
+  if (navigationHistory.length === 0) {
+    currentView = 'map';
+  } else {
+    currentView = navigationHistory.pop();
+  }
   renderView();
+  store.set({ currentView });
 }
 
 function renderView() {
-  // TODO: Hide all view sections
-  // TODO: Show current view section
-  // TODO: Update back button visibility
-  // TODO: Update store with current view
-  store.set({ currentView });
+  // Hide all views
+  VIEWS.forEach((v) => {
+    const el = document.getElementById(`view-${v}`);
+    if (el) el.classList.add('hidden');
+  });
+
+  // Show current view
+  const el = document.getElementById(`view-${currentView}`);
+  if (el) el.classList.remove('hidden');
+
+  // Trigger resize so map/canvas redraws
+  window.dispatchEvent(new Event('resize'));
 }
 
 export function getCurrentView() {
@@ -43,9 +63,9 @@ export function canGoBack() {
   return navigationHistory.length > 0;
 }
 
-// Session-based routing
 export function setInitialView(isAuthenticated) {
   currentView = isAuthenticated ? 'map' : 'login';
   navigationHistory = [];
   renderView();
+  store.set({ currentView });
 }
