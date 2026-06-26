@@ -117,6 +117,19 @@ async function init() {
 
   // Studio map preview toggle — static tile image
   let studioMapInitialized = false;
+  store.subscribe((state) => {
+    if (state.currentProject?.id !== undefined) {
+      studioMapInitialized = false;
+      const thumb = $('studioMapThumb');
+      if (thumb) thumb.innerHTML = '';
+      const preview = $('studioMapPreview');
+      const btn = $('toggleMapPreview');
+      if (preview && !preview.classList.contains('collapsed')) {
+        preview.classList.add('collapsed');
+        if (btn) btn.textContent = 'Show Map';
+      }
+    }
+  });
   $('toggleMapPreview')?.addEventListener('click', () => {
     const preview = $('studioMapPreview');
     const btn = $('toggleMapPreview');
@@ -125,23 +138,20 @@ async function init() {
     if (preview.classList.contains('collapsed')) {
       preview.classList.remove('collapsed');
       btn.textContent = 'Hide Map';
-      if (!studioMapInitialized) {
-        const thumb = $('studioMapThumb');
-        if (thumb) {
-          const bounds = store.get('bounds');
-          if (bounds) {
-            const latMid = (bounds.minLat + bounds.maxLat) / 2;
-            const lonMid = (bounds.minLon + bounds.maxLon) / 2;
-            const latSpan = bounds.maxLat - bounds.minLat;
-            const lonSpan = bounds.maxLon - bounds.minLon;
-            const span = Math.max(latSpan, lonSpan) * 1.4;
-            const zoom = Math.max(1, Math.min(19, Math.floor(Math.log2(360 / span))));
-            const tileX = Math.floor(((lonMid + 180) / 360) * Math.pow(2, zoom));
-            const tileY = Math.floor((1 - Math.log(Math.tan(latMid * Math.PI / 180) + 1 / Math.cos(latMid * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom));
-            const url = `https://tile.openstreetmap.org/${zoom}/${tileX}/${tileY}.png`;
-            thumb.innerHTML = `<img src="${url}" alt="Site map" style="width:100%;height:100%;object-fit:cover;" />`;
-            studioMapInitialized = true;
-          }
+      const thumb = $('studioMapThumb');
+      if (thumb) {
+        const bounds = store.get('bounds');
+        if (bounds) {
+          const latMid = (bounds.minLat + bounds.maxLat) / 2;
+          const lonMid = (bounds.minLon + bounds.maxLon) / 2;
+          const latSpan = bounds.maxLat - bounds.minLat;
+          const lonSpan = bounds.maxLon - bounds.minLon;
+          const span = Math.max(latSpan, lonSpan) * 1.4;
+          const zoom = Math.max(1, Math.min(19, Math.floor(Math.log2(360 / span))));
+          const tileX = Math.floor(((lonMid + 180) / 360) * Math.pow(2, zoom));
+          const tileY = Math.floor((1 - Math.log(Math.tan(latMid * Math.PI / 180) + 1 / Math.cos(latMid * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom));
+          const url = `https://tile.openstreetmap.org/${zoom}/${tileX}/${tileY}.png`;
+          thumb.innerHTML = `<img src="${url}" alt="Site map" style="width:100%;height:100%;object-fit:cover;" />`;
         }
       }
     } else {
