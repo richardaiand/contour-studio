@@ -27,7 +27,7 @@ export const config = {
   env: getEnv('NODE_ENV', 'development'),
   port: parseInt(getEnv('PORT', '3000'), 10),
   appUrl: getEnv('APP_URL', 'http://localhost:3000'),
-  databaseUrl: getEnv('DATABASE_URL', './data/contour-studio.db'),
+  databaseUrl: getEnv('DATABASE_URL', '/tmp/contour-studio.db'),
   jwtSecret: requireEnv('JWT_SECRET'),
   cookieSecret: requireEnv('COOKIE_SECRET'),
   encryptionKey: hasValidEncryptionKey ? rawEncryptionKey : '',

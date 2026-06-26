@@ -65,6 +65,29 @@ async function buildServer() {
   // Health check
   fastify.get('/health', async () => ({ status: 'ok', version: '0.1.0' }));
 
+  // Debug endpoint — shows DB and filesystem status
+  fastify.get('/api/debug', async () => {
+    const { getDb } = await import('./db.js');
+    const { config } = await import('./config.js');
+    const { existsSync, statSync } = await import('fs');
+    const info = {
+      databaseUrl: config.databaseUrl,
+      dbFileExists: false,
+      dbWritable: false,
+      tables: [],
+      error: null,
+    };
+    try {
+      info.dbFileExists = existsSync(config.databaseUrl);
+      const db = getDb();
+      info.tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map(r => r.name);
+      info.dbWritable = true;
+    } catch (err) {
+      info.error = err.message;
+    }
+    return info;
+  });
+
   // Serve static client in production
   if (isProduction) {
     const { default: fastifyStatic } = await import('@fastify/static');
