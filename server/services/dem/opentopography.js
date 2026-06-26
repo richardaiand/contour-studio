@@ -39,13 +39,19 @@ export async function fetchDem(bounds, detail) {
     throw new AppError(`OpenTopography error ${res.status}: ${text.slice(0, 200)}`, 502, 'DEM_ERROR');
   }
 
-  const contentType = res.headers.get('content-type') || '';
-  if (!contentType.includes('geotiff') && !contentType.includes('tif')) {
-    const text = await res.text().catch(() => '');
-    throw new AppError(`OpenTopography returned non-GeoTIFF response: ${text.slice(0, 200)}`, 502, 'DEM_ERROR');
+  const arrayBuffer = await res.arrayBuffer();
+
+  // Check for TIFF magic bytes instead of relying on content-type header
+  const bytes = new Uint8Array(arrayBuffer);
+  const isTiff =
+    (bytes[0] === 0x49 && bytes[1] === 0x49 && bytes[2] === 0x2a) || // II* (little-endian)
+    (bytes[0] === 0x4d && bytes[1] === 0x4d && bytes[2] === 0x00);  // MM\0 (big-endian)
+
+  if (!isTiff) {
+    const text = new TextDecoder().decode(bytes.slice(0, 200));
+    throw new AppError(`OpenTopography returned non-GeoTIFF response: ${text}`, 502, 'DEM_ERROR');
   }
 
-  const arrayBuffer = await res.arrayBuffer();
   const { width, height, grid } = await parseGeoTiff(arrayBuffer);
 
   const targetSize = Math.min(detail.meshSize, detail.maxSamples);
