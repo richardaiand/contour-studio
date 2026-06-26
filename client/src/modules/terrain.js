@@ -228,8 +228,10 @@ async function generateTerrain() {
   }
 
   store.set({ isGenerating: true });
-    setLoading(true, 'Queueing terrain generation…');
-    document.querySelectorAll('.exports button').forEach((b) => (b.disabled = true));
+  setLoading(true, 'Queueing terrain generation…');
+  document.querySelectorAll('.exports button').forEach((b) => (b.disabled = true));
+  const genBtn = $('generateBtn');
+  if (genBtn) genBtn.disabled = true;
 
   try {
     const detailLevel = store.get('detail');
@@ -295,6 +297,8 @@ async function generateTerrain() {
     setStatus('Generation failed: ' + e.message, 'error');
   } finally {
     store.set({ isGenerating: false });
+    const gb = $('generateBtn');
+    if (gb) gb.disabled = !store.get('bounds');
   }
 }
 
@@ -405,7 +409,14 @@ async function exportTerrain(format) {
   const terrain = store.get('currentTerrain');
   if (!terrain) return;
 
-  setStatus(`Exporting ${format.toUpperCase()}…`, '');
+  const progress = document.getElementById('exportProgress');
+  const progressText = document.getElementById('exportProgressText');
+  const buttons = document.querySelectorAll('.exports button');
+
+  if (progress) progress.classList.remove('hidden');
+  if (progressText) progressText.textContent = `Exporting ${format.toUpperCase()}…`;
+  buttons.forEach((b) => (b.disabled = true));
+
   try {
     const filename = $('filename').value.trim() || 'terrain';
     const res = await fetch('/api/terrain/export', {
@@ -430,5 +441,9 @@ async function exportTerrain(format) {
     setStatus('Export complete.', 'ok');
   } catch (e) {
     setStatus('Export failed: ' + e.message, 'error');
+  } finally {
+    if (progress) progress.classList.add('hidden');
+    const hasTerrain = !!store.get('currentTerrain');
+    buttons.forEach((b) => (b.disabled = !hasTerrain));
   }
 }

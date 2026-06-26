@@ -68,7 +68,7 @@ export async function fetchDemForBounds(bounds, detailLevel = 'standard') {
   // 1. Try OpenTopography global DEM if key is configured
   if (config.dem.openTopographyKey) {
     try {
-      const data = await opentopography.fetchDem(fetchBounds, detail);
+      const data = await opentopography.fetchDem(fetchBounds, { ...detail, detailLevel });
       return {
         ...data,
         detailLevel,
@@ -85,7 +85,7 @@ export async function fetchDemForBounds(bounds, detailLevel = 'standard') {
 
   // 2. Fallback to Open-Meteo (free, no key)
   try {
-    const data = await openmeteo.fetchElevation(fetchBounds, detail);
+    const data = await openmeteo.fetchElevation(fetchBounds, { ...detail, detailLevel });
     return {
       ...data,
       detailLevel,

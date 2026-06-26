@@ -111,14 +111,12 @@ function createNorthArrow() {
 function applyThemeColors(theme = store.get('theme')) {
   if (!scene) return;
 
-  const bg = cssColor('--bg');
-  const border = cssColor('--panel-border');
-
-  scene.background = new THREE.Color(bg);
+  // Studio viewport always uses light background for better terrain visibility
+  scene.background = new THREE.Color(0xf4f6f9);
   scene.fog = null;
 
   if (gridHelper) {
-    gridHelper.material.color = new THREE.Color(border);
+    gridHelper.material.color = new THREE.Color(0xd8dee8);
   }
 }
 

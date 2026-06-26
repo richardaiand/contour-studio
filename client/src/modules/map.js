@@ -57,6 +57,7 @@ export function initMap() {
     dragPan: false,
     pitchWithRotate: false,
     maxPitch: 0,
+    preserveDrawingBuffer: true,
   });
 
   map.addControl(new maplibregl.NavigationControl({ showCompass: false, visualizePitch: false }), 'top-right');
@@ -605,6 +606,7 @@ export function computeBounds(center, sizeMeters = 1000) {
 export function captureMapThumbnail() {
   if (!map) return null;
   try {
+    map.triggerRepaint();
     const canvas = map.getCanvas();
     return canvas.toDataURL('image/jpeg', 0.7);
   } catch {
