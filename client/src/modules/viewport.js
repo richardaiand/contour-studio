@@ -7,6 +7,8 @@ let renderer, scene, camera, controls, terrainMesh, gridHelper;
 
 export function initViewport() {
   const canvas = $('scene');
+  if (!canvas) return;
+
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(canvas.clientWidth, canvas.clientHeight);

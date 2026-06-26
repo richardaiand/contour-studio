@@ -19,6 +19,7 @@ const MIN_SIZE_METERS = 10;
 const HANDLE_DISTANCE_METERS = 80;
 
 export function initMap() {
+  if (!$('map')) return;
   map = new maplibregl.Map({
     container: 'map',
     style: {

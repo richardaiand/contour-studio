@@ -12,18 +12,21 @@ const PRESETS = [
 let aiandModels = [];
 
 export function initSettings() {
-  $('settingsBtn').addEventListener('click', openSettings);
-  $('cancelSettings').addEventListener('click', () => $('settingsDlg').close());
-  $('saveSettings').addEventListener('click', saveSettings);
+  $('settingsBtn')?.addEventListener('click', openSettings);
+  $('settingsBtnDashboard')?.addEventListener('click', openSettings);
+  $('cancelSettings')?.addEventListener('click', () => $('settingsDlg')?.close());
+  $('saveSettings')?.addEventListener('click', saveSettings);
 
   const wrap = $('providerPresets');
-  PRESETS.forEach((p) => {
-    const b = document.createElement('button');
-    b.className = 'sm secondary';
-    b.textContent = p.name;
-    b.addEventListener('click', () => applyPreset(p));
-    wrap.appendChild(b);
-  });
+  if (wrap) {
+    PRESETS.forEach((p) => {
+      const b = document.createElement('button');
+      b.className = 'sm secondary';
+      b.textContent = p.name;
+      b.addEventListener('click', () => applyPreset(p));
+      wrap.appendChild(b);
+    });
+  }
 
   $('modelSelect')?.addEventListener('change', () => {
     const val = $('modelSelect').value;
@@ -37,12 +40,14 @@ export function initSettings() {
   });
 
   store.subscribe((state) => {
+    const btn = $('settingsBtn') || $('settingsBtnDashboard');
+    if (!btn) return;
     if (!state.user) {
-      $('settingsBtn').disabled = true;
-      $('settingsBtn').title = 'Sign in to configure AI provider';
+      btn.disabled = true;
+      btn.title = 'Sign in to configure AI provider';
     } else {
-      $('settingsBtn').disabled = false;
-      $('settingsBtn').title = '';
+      btn.disabled = false;
+      btn.title = '';
     }
   });
 }

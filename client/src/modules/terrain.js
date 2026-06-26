@@ -9,12 +9,12 @@ let suggestionIndex = -1;
 let suggestions = [];
 
 export function initTerrain() {
-  $('searchBtn').addEventListener('click', searchAddress);
-  $('addressInput').addEventListener('keydown', handleInputKey);
-  $('addressInput').addEventListener('input', debounce(handleAddressInput, 250));
+  $('searchBtn')?.addEventListener('click', searchAddress);
+  $('addressInput')?.addEventListener('keydown', handleInputKey);
+  $('addressInput')?.addEventListener('input', debounce(handleAddressInput, 250));
 
-  $('generateBtn').addEventListener('click', generateTerrain);
-  $('dropCenterBtn').addEventListener('click', dropCenter);
+  $('generateBtn')?.addEventListener('click', generateTerrain);
+  $('dropCenterBtn')?.addEventListener('click', dropCenter);
 
   // Detail selector
   const detailBtns = document.querySelectorAll('#detailSelector button');
@@ -66,12 +66,13 @@ export function initTerrain() {
   });
 
   // Map upload
-  $('mapUpload').addEventListener('change', analyzeMapUpload);
+  $('mapUpload')?.addEventListener('change', analyzeMapUpload);
 
   store.subscribe((state) => {
     const hasTerrain = !!state.currentTerrain;
     document.querySelectorAll('.exports button').forEach((b) => (b.disabled = !hasTerrain));
-    $('generateBtn').disabled = !state.bounds;
+    const genBtn = $('generateBtn');
+    if (genBtn) genBtn.disabled = !state.bounds;
   });
 }
 
