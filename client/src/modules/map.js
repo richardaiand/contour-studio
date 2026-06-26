@@ -49,7 +49,6 @@ export function initMap() {
     zoom: 3,
     minZoom: 2,
     maxZoom: 19,
-    maxBounds: [[-180, -85], [180, 85]],
     renderWorldCopies: false,
     scrollZoom: { smooth: true, speed: 0.6 },
     touchZoomRotate: true,
@@ -59,6 +58,14 @@ export function initMap() {
   });
 
   map.addControl(new maplibregl.NavigationControl({ showCompass: false, visualizePitch: false }), 'top-right');
+
+  // Clamp latitude so the map doesn't scroll past the poles
+  map.on('move', () => {
+    const c = map.getCenter();
+    if (c.lat > 85 || c.lat < -85) {
+      map.setCenter([c.lng, Math.max(-85, Math.min(85, c.lat))]);
+    }
+  });
 
   // Interrupt any fitBounds animation when the user interacts
   const stopAnimation = () => { if (map.isMoving()) map.stop(); };
