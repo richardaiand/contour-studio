@@ -17,15 +17,14 @@ export async function loadProjects() {
     const projects = await api('/projects');
     store.set({ projects });
   } catch (e) {
-    setStatus('Failed to load projects: ' + e.message, 'error');
+    store.set({ projects: [] });
   }
 
   try {
     const exports = await api('/projects/exports');
     store.set({ exports });
   } catch (e) {
-    // Non-fatal
-    console.error('Failed to load exports', e);
+    store.set({ exports: [] });
   }
 }
 

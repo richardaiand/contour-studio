@@ -1,21 +1,20 @@
 import Database from 'better-sqlite3';
-import { readFileSync, mkdirSync } from 'fs';
-import { dirname, resolve, join } from 'path';
-import { fileURLToPath } from 'url';
+import { mkdirSync } from 'fs';
+import { dirname, resolve } from 'path';
 import { config } from './config.js';
 import { randomUUID } from 'crypto';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const migrationsDir = resolve(__dirname, '../migrations');
 
 const dbPath = config.databaseUrl.startsWith('./') || config.databaseUrl.startsWith('/')
   ? resolve(config.databaseUrl)
   : config.databaseUrl;
 
 // Ensure directory exists for SQLite file
-if (dbPath.startsWith('/')) {
-  mkdirSync(dirname(dbPath), { recursive: true });
+try {
+  if (dbPath.startsWith('/')) {
+    mkdirSync(dirname(dbPath), { recursive: true });
+  }
+} catch (err) {
+  console.error('Failed to create DB directory:', err.message);
 }
 
 let db = null;
@@ -31,47 +30,111 @@ export function getDb() {
 
 export function runMigrations() {
   const database = getDb();
+
+  // Create all tables inline — no external migration files needed
   database.exec(`
-    CREATE TABLE IF NOT EXISTS migrations (
+    CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
-      applied_at INTEGER NOT NULL
+      username TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
     );
+
+    CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+
+    CREATE TABLE IF NOT EXISTS user_settings (
+      user_id TEXT PRIMARY KEY,
+      provider_endpoint TEXT,
+      provider_model TEXT,
+      encrypted_api_key TEXT,
+      theme TEXT DEFAULT 'dark',
+      default_detail TEXT DEFAULT 'standard',
+      updated_at INTEGER NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS projects (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      detail_level TEXT DEFAULT 'standard',
+      bounds_json TEXT,
+      center_json TEXT,
+      source_info_json TEXT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_projects_user ON projects(user_id, updated_at DESC);
+
+    CREATE TABLE IF NOT EXISTS messages (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL,
+      role TEXT NOT NULL,
+      content TEXT NOT NULL,
+      metadata_json TEXT,
+      created_at INTEGER NOT NULL,
+      FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_messages_project ON messages(project_id, created_at ASC);
+
+    CREATE TABLE IF NOT EXISTS jobs (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      type TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      progress INTEGER DEFAULT 0,
+      payload_json TEXT,
+      result_json TEXT,
+      error TEXT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_jobs_user ON jobs(user_id, created_at DESC);
+
+    CREATE TABLE IF NOT EXISTS exports (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      project_id TEXT,
+      format TEXT NOT NULL,
+      filename TEXT NOT NULL,
+      size_bytes INTEGER,
+      created_at INTEGER NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_exports_user ON exports(user_id, created_at DESC);
+
+    CREATE TABLE IF NOT EXISTS map_sources (
+      id TEXT PRIMARY KEY,
+      country_code TEXT NOT NULL,
+      region TEXT,
+      agency TEXT NOT NULL,
+      source_type TEXT NOT NULL,
+      base_url TEXT NOT NULL,
+      coverage_json TEXT NOT NULL,
+      min_scale INTEGER,
+      max_scale INTEGER,
+      formats_json TEXT,
+      license TEXT,
+      access_notes TEXT,
+      is_direct_download INTEGER DEFAULT 1,
+      is_active INTEGER DEFAULT 1,
+      created_at INTEGER NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_map_sources_country ON map_sources(country_code, is_active);
   `);
 
-  const applied = new Set(
-    database.prepare('SELECT id FROM migrations').pluck().all()
-  );
-
-  const migrations = [
-    { id: '001_init', file: join(migrationsDir, '001_init.sql') },
-    { id: '002_jobs_payload', file: join(migrationsDir, '002_jobs_payload.sql') },
-    { id: '003_exports', file: join(migrationsDir, '003_exports.sql') },
-  ];
-
-  for (const migration of migrations) {
-    if (applied.has(migration.id)) continue;
-    try {
-      const sql = readFileSync(migration.file, 'utf8');
-      database.exec(sql);
-      database.prepare('INSERT INTO migrations (id, applied_at) VALUES (?, ?)').run(
-        migration.id,
-        Date.now()
-      );
-      console.log(`Applied migration ${migration.id}`);
-    } catch (err) {
-      console.error(`Migration ${migration.id} failed:`, err.message);
-      throw err;
-    }
-  }
+  console.log('Database tables created/verified');
 }
 
 export function generateId() {
   return randomUUID();
-}
-
-// Run migrations if this file is executed directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-  runMigrations();
-  console.log('Migrations complete');
-  process.exit(0);
 }

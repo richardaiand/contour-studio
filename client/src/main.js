@@ -17,10 +17,20 @@ async function init() {
   initViewport();
   initTerrain();
 
+  let projectsLoaded = false;
   store.subscribe((state) => {
-    if (state.user) loadProjects();
+    if (state.user && !projectsLoaded) {
+      projectsLoaded = true;
+      loadProjects();
+    }
+    if (!state.user) {
+      projectsLoaded = false;
+    }
   });
-  if (store.get('user')) loadProjects();
+  if (store.get('user')) {
+    projectsLoaded = true;
+    loadProjects();
+  }
 
   store.subscribe((state) => {
     const titleEl = $('projectTitle');
