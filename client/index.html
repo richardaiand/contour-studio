@@ -158,8 +158,23 @@
           <button id="studioSidebarToggle" class="panel-toggle" title="Collapse sidebar">‹</button>
           <div class="sidebar-content">
             <div class="panel">
+              <h2>Site Map</h2>
+              <div id="studioMapPreview" class="studio-map-preview collapsed">
+                <div id="studioMapThumb" class="studio-map-thumb"></div>
+              </div>
+              <button id="toggleMapPreview" class="ghost sm full">Show Map</button>
+            </div>
+
+            <div class="panel">
               <h2>Terrain</h2>
               <div id="stats" class="stats">No terrain</div>
+              <div class="elevation-legend">
+                <div class="elevation-legend-bar"></div>
+                <div class="elevation-legend-labels">
+                  <span id="elevLow">Low</span>
+                  <span id="elevHigh">High</span>
+                </div>
+              </div>
               <div class="detail-selector">
                 <label>Exports</label>
                 <div class="exports">

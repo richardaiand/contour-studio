@@ -734,6 +734,52 @@ button.full {
   font-size: 12px;
 }
 
+/* Studio map preview */
+.studio-map-preview {
+  overflow: hidden;
+  transition: max-height 0.2s ease;
+  max-height: 250px;
+}
+
+.studio-map-preview.collapsed {
+  max-height: 0;
+}
+
+.studio-map-thumb {
+  width: 100%;
+  height: 200px;
+  background: var(--bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+}
+
+.studio-map-thumb iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* Elevation legend */
+.elevation-legend {
+  margin: 10px 0;
+}
+
+.elevation-legend-bar {
+  height: 12px;
+  border-radius: 3px;
+  background: linear-gradient(to right, #2d6a2d, #8b7a3a, #c4b89a, #e8e8e8);
+}
+
+.elevation-legend-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
 .exports {
   display: flex;
   flex-wrap: wrap;

@@ -2,13 +2,13 @@ import { PNG } from 'pngjs';
 import { sanitizeFilename } from '../../utils/index.js';
 
 export function exportMesh(mesh, format, nameRoot = 'terrain') {
-  const filename = sanitizeFilename(nameRoot) + '.' + format;
+  const filename = sanitizeFilename(nameRoot) + '.' + (format === 'heightmap' ? 'png' : format);
 
   switch (format) {
     case 'obj':
       return { filename, data: toObj(mesh), type: 'text/plain' };
     case 'stl':
-      return { filename, data: toAsciiStl(mesh), type: 'model/stl' };
+      return { filename, data: toBinaryStl(mesh), type: 'application/octet-stream' };
     case 'heightmap':
       return { filename, data: toHeightmapPng(mesh), type: 'image/png' };
     default:
@@ -45,12 +45,17 @@ function toObj(mesh) {
   return text;
 }
 
-function toAsciiStl(mesh) {
-  let text = 'solid terrain\n';
+function toBinaryStl(mesh) {
   const positions = mesh.positions;
   const normals = mesh.normals;
   const indices = mesh.indices;
+  const triCount = indices.length / 3;
 
+  const buf = Buffer.alloc(84 + triCount * 50);
+  buf.write('binary STL', 0, 80, 'ascii');
+  buf.writeUInt32LE(triCount, 80);
+
+  let offset = 84;
   for (let i = 0; i < indices.length; i += 3) {
     const i0 = indices[i] * 3;
     const i1 = indices[i + 1] * 3;
@@ -60,17 +65,23 @@ function toAsciiStl(mesh) {
     const ny = (normals[i0 + 1] + normals[i1 + 1] + normals[i2 + 1]) / 3;
     const nz = (normals[i0 + 2] + normals[i1 + 2] + normals[i2 + 2]) / 3;
 
-    text += `  facet normal ${nx.toFixed(6)} ${ny.toFixed(6)} ${nz.toFixed(6)}\n`;
-    text += '    outer loop\n';
-    text += `      vertex ${positions[i0].toFixed(6)} ${positions[i0 + 1].toFixed(6)} ${positions[i0 + 2].toFixed(6)}\n`;
-    text += `      vertex ${positions[i1].toFixed(6)} ${positions[i1 + 1].toFixed(6)} ${positions[i1 + 2].toFixed(6)}\n`;
-    text += `      vertex ${positions[i2].toFixed(6)} ${positions[i2 + 1].toFixed(6)} ${positions[i2 + 2].toFixed(6)}\n`;
-    text += '    endloop\n';
-    text += '  endfacet\n';
+    buf.writeFloatLE(nx, offset);
+    buf.writeFloatLE(ny, offset + 4);
+    buf.writeFloatLE(nz, offset + 8);
+    buf.writeFloatLE(positions[i0], offset + 12);
+    buf.writeFloatLE(positions[i0 + 1], offset + 16);
+    buf.writeFloatLE(positions[i0 + 2], offset + 20);
+    buf.writeFloatLE(positions[i1], offset + 24);
+    buf.writeFloatLE(positions[i1 + 1], offset + 28);
+    buf.writeFloatLE(positions[i1 + 2], offset + 32);
+    buf.writeFloatLE(positions[i2], offset + 36);
+    buf.writeFloatLE(positions[i2 + 1], offset + 40);
+    buf.writeFloatLE(positions[i2 + 2], offset + 44);
+    buf.writeUInt16LE(0, offset + 48);
+    offset += 50;
   }
 
-  text += 'endsolid terrain\n';
-  return text;
+  return buf;
 }
 
 function toHeightmapPng(mesh) {

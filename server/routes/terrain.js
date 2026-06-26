@@ -83,6 +83,7 @@ export default async function (fastify) {
   }, async (req, reply) => {
     try {
       const { mesh, format, filename = 'terrain', projectId } = req.body;
+      req.log.info({ format, meshSize: mesh.positions?.length, hasGrid: !!mesh.grid }, 'Export request');
       const result = exportMesh(mesh, format, filename);
 
       if (req.user?.userId) {
@@ -100,7 +101,7 @@ export default async function (fastify) {
       reply.header('Content-Type', result.type);
       return reply.send(result.data);
     } catch (err) {
-      req.log.error({ err }, 'Export failed');
+      req.log.error({ err: err.message, stack: err.stack }, 'Export failed');
       throw new AppError('Export failed: ' + err.message, 500, 'EXPORT_ERROR');
     }
   });

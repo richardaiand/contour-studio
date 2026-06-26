@@ -76,6 +76,37 @@ async function init() {
   // Edit Site button → back to map
   $('editSiteBtn')?.addEventListener('click', () => navigate('map'));
 
+  // Studio map preview toggle
+  let studioMapInitialized = false;
+  $('toggleMapPreview')?.addEventListener('click', () => {
+    const preview = $('studioMapPreview');
+    const btn = $('toggleMapPreview');
+    if (!preview) return;
+
+    if (preview.classList.contains('collapsed')) {
+      preview.classList.remove('collapsed');
+      btn.textContent = 'Hide Map';
+      if (!studioMapInitialized) {
+        const thumb = $('studioMapThumb');
+        if (thumb) {
+          const bounds = store.get('bounds');
+          if (bounds) {
+            const delta = 0.002;
+            const bbox = `${bounds.minLon - delta},${bounds.minLat - delta},${bounds.maxLon + delta},${bounds.maxLat + delta}`;
+            const w = 300;
+            const h = 200;
+            const url = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik`;
+            thumb.innerHTML = `<iframe src="${url}" loading="lazy"></iframe>`;
+            studioMapInitialized = true;
+          }
+        }
+      }
+    } else {
+      preview.classList.add('collapsed');
+      btn.textContent = 'Show Map';
+    }
+  });
+
   // Dashboard new project button
   $('newProjectBtnDashboard')?.addEventListener('click', () => {
     $('projectNameDlg')?.showModal();

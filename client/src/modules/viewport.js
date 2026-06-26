@@ -3,7 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { $ } from '../utils.js';
 import { store } from '../store/index.js';
 
-let renderer, scene, camera, controls, terrainMesh, gridHelper;
+let renderer, scene, camera, controls, terrainMesh, gridHelper, northArrow;
 
 export function initViewport() {
   const canvas = $('scene');
@@ -44,6 +44,8 @@ export function initViewport() {
   gridHelper.material.opacity = 0.35;
   scene.add(gridHelper);
 
+  createNorthArrow();
+
   applyThemeColors();
   store.subscribe((state) => {
     applyThemeColors(state.theme);
@@ -53,6 +55,39 @@ export function initViewport() {
   animate();
 
   return { renderer, scene, camera, controls };
+}
+
+function createNorthArrow() {
+  if (northArrow) {
+    scene.remove(northArrow);
+    northArrow.traverse((obj) => {
+      if (obj.geometry) obj.geometry.dispose();
+      if (obj.material) obj.material.dispose();
+    });
+  }
+
+  northArrow = new THREE.Group();
+
+  const arrowShape = new THREE.Shape();
+  arrowShape.moveTo(0, 1);
+  arrowShape.lineTo(0.3, -0.5);
+  arrowShape.lineTo(0, -0.2);
+  arrowShape.lineTo(-0.3, -0.5);
+  arrowShape.lineTo(0, 1);
+
+  const arrowGeo = new THREE.ShapeGeometry(arrowShape);
+  const arrowMat = new THREE.MeshBasicMaterial({ color: 0xef4444, side: THREE.DoubleSide });
+  const arrowMesh = new THREE.Mesh(arrowGeo, arrowMat);
+  northArrow.add(arrowMesh);
+
+  const ringGeo = new THREE.RingGeometry(0.8, 1, 32);
+  const ringMat = new THREE.MeshBasicMaterial({ color: 0x888888, side: THREE.DoubleSide });
+  const ring = new THREE.Mesh(ringGeo, ringMat);
+  northArrow.add(ring);
+
+  northArrow.rotation.x = -Math.PI / 2;
+  northArrow.visible = false;
+  scene.add(northArrow);
 }
 
 function applyThemeColors(theme = store.get('theme')) {
@@ -127,6 +162,18 @@ export function setTerrain(meshData) {
   camera.position.set(center.x + dist * 0.6, center.y + dist * 0.4, center.z + dist * 0.8);
   controls.target.copy(center);
   controls.update();
+
+  if (northArrow) {
+    const arrowScale = maxDim * 0.08;
+    northArrow.scale.set(arrowScale, arrowScale, arrowScale);
+    northArrow.position.set(
+      box.min.x - arrowScale * 1.5,
+      box.min.y + 1,
+      box.min.z + arrowScale * 0.5
+    );
+    northArrow.visible = true;
+  }
+
   triggerResize();
 }
 
@@ -172,34 +219,34 @@ export function drawSelectionOutline(originalBounds, fetchBounds) {
     selectionOutline.material?.dispose();
   }
 
-  const latMid = (originalBounds.minLat + originalBounds.maxLat) / 2;
+  const latMid = (fetchBounds.minLat + fetchBounds.maxLat) / 2;
   const xScale = 111320 * Math.cos((latMid * Math.PI) / 180);
   const zScale = 111320;
 
-  const fetchCenterLat = (fetchBounds.minLat + fetchBounds.maxLat) / 2;
-  const fetchCenterLon = (fetchBounds.minLon + fetchBounds.maxLon) / 2;
-  const offsetX = (fetchCenterLon - fetchBounds.minLon) * xScale - xScale * (fetchBounds.maxLon - fetchBounds.minLon) / 2;
-  const offsetZ = (fetchCenterLat - fetchBounds.minLat) * zScale - zScale * (fetchBounds.maxLat - fetchBounds.minLat) / 2;
+  const fetchW = (fetchBounds.maxLon - fetchBounds.minLon) * xScale;
+  const fetchH = (fetchBounds.maxLat - fetchBounds.minLat) * zScale;
 
-  const w = (originalBounds.maxLon - originalBounds.minLon) * xScale;
-  const h = (originalBounds.maxLat - originalBounds.minLat) * zScale;
-  const cx = (originalBounds.minLon + originalBounds.maxLon) / 2;
-  const cz = (originalBounds.minLat + originalBounds.maxLat) / 2;
+  const origW = (originalBounds.maxLon - originalBounds.minLon) * xScale;
+  const origH = (originalBounds.maxLat - originalBounds.minLat) * zScale;
 
-  const px = (cx - fetchBounds.minLon) * xScale - xScale * (fetchBounds.maxLon - fetchBounds.minLon) / 2;
-  const pz = (cz - fetchBounds.minLat) * zScale - zScale * (fetchBounds.maxLat - fetchBounds.minLat) / 2;
+  const origCenterLon = (originalBounds.minLon + originalBounds.maxLon) / 2;
+  const origCenterLat = (originalBounds.minLat + originalBounds.maxLat) / 2;
+
+  const px = (origCenterLon - fetchBounds.minLon) * xScale - fetchW / 2;
+  const pz = (origCenterLat - fetchBounds.minLat) * zScale - fetchH / 2;
 
   const geo = new THREE.BufferGeometry();
+  const y = 1;
   const positions = new Float32Array([
-    px - w / 2, 1, pz - h / 2,
-    px + w / 2, 1, pz - h / 2,
-    px + w / 2, 1, pz + h / 2,
-    px - w / 2, 1, pz + h / 2,
-    px - w / 2, 1, pz - h / 2,
+    px - origW / 2, y, pz - origH / 2,
+    px + origW / 2, y, pz - origH / 2,
+    px + origW / 2, y, pz + origH / 2,
+    px - origW / 2, y, pz + origH / 2,
+    px - origW / 2, y, pz - origH / 2,
   ]);
   geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
-  const mat = new THREE.LineBasicMaterial({ color: 0x3b82f6, linewidth: 3 });
+  const mat = new THREE.LineBasicMaterial({ color: 0x3b82f6 });
   selectionOutline = new THREE.Line(geo, mat);
   scene.add(selectionOutline);
 }

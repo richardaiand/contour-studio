@@ -32,12 +32,12 @@ describe('exportMesh', () => {
     assert.ok(result.data.includes('f '));
   });
 
-  it('exports STL as text', () => {
+  it('exports STL as binary buffer', () => {
     const result = exportMesh(makeMesh(), 'stl', 'test');
     assert.equal(result.filename, 'test.stl');
-    assert.equal(result.type, 'model/stl');
-    assert.ok(typeof result.data === 'string');
-    assert.ok(result.data.includes('solid terrain'));
+    assert.equal(result.type, 'application/octet-stream');
+    assert.ok(Buffer.isBuffer(result.data));
+    assert.ok(result.data.length > 84);
   });
 
   it('exports heightmap as PNG buffer', () => {

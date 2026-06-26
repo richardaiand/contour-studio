@@ -261,7 +261,7 @@ async function generateTerrain() {
     navigate('studio');
     requestAnimationFrame(() => {
       setTerrain(data.mesh);
-      if (data.wasExpanded && data.originalBounds) {
+      if (data.originalBounds && data.fetchBounds) {
         drawSelectionOutline(data.originalBounds, data.fetchBounds);
       }
       updateStats(data);
@@ -379,6 +379,11 @@ function updateStats(data) {
     <b>${range}</b> m range ·
     <b>${data.verticalExaggeration}×</b> vertical exaggeration
   `;
+
+  const elevLow = $('elevLow');
+  const elevHigh = $('elevHigh');
+  if (elevLow) elevLow.textContent = `${data.minElevation.toFixed(0)}m`;
+  if (elevHigh) elevHigh.textContent = `${data.maxElevation.toFixed(0)}m`;
 }
 
 async function exportTerrain(format) {
