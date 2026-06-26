@@ -65,6 +65,7 @@ async function init() {
     if (btn) {
       btn.addEventListener('click', () => {
         store.set({ user: null, settings: null, currentProject: null });
+        localStorage.removeItem('cs-signed-in');
         document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
         setStatus('Signed out.', '');
         navigate('login');
@@ -100,17 +101,19 @@ async function init() {
     if (e.key === 'Enter') $('projectNameConfirm')?.click();
   });
 
-  // Restore session
-  const hasCookie = document.cookie.includes('token=');
-  if (hasCookie) {
+  // Restore session — use localStorage since cookie is httpOnly
+  const wasSignedIn = localStorage.getItem('cs-signed-in') === '1';
+  if (wasSignedIn) {
     // Show dashboard immediately while session restores
     setInitialView(true);
   }
   const session = await restoreSession();
   if (session) {
+    localStorage.setItem('cs-signed-in', '1');
     setInitialView(true);
     setStatus('Ready. Search for a location to begin.', '');
   } else {
+    localStorage.removeItem('cs-signed-in');
     setInitialView(false);
   }
 }

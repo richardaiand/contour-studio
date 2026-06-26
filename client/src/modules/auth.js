@@ -23,7 +23,8 @@ async function handleSignIn() {
       body: JSON.stringify({ username, password }),
     });
     setAuth(data);
-    navigate('map');
+    localStorage.setItem('cs-signed-in', '1');
+    navigate('dashboard');
     setStatus(`Welcome back, ${data.user.username}.`, 'ok');
   } catch (e) {
     $('authError').textContent = e.message;
@@ -46,7 +47,8 @@ async function handleSignUp() {
       body: JSON.stringify({ username, password }),
     });
     setAuth(data);
-    navigate('map');
+    localStorage.setItem('cs-signed-in', '1');
+    navigate('dashboard');
     setStatus(`Account created. Welcome, ${data.user.username}.`, 'ok');
   } catch (e) {
     $('authError').textContent = e.message;
