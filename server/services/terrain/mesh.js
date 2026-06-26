@@ -1,5 +1,5 @@
 export function gridToMesh(grid, bounds, options = {}) {
-  const { verticalExaggeration = 1.5, baseHeight = 0 } = options;
+  const { verticalExaggeration = 1.5, baseHeight = 0, baseOffset = 10 } = options;
   const height = grid.length;
   const width = grid[0]?.length || 0;
 
@@ -24,6 +24,10 @@ export function gridToMesh(grid, bounds, options = {}) {
   const xSpanMeters = (bounds.maxLon - bounds.minLon) * xScale;
   const zSpanMeters = (bounds.maxLat - bounds.minLat) * zScale;
 
+  const bottomY = baseHeight - baseOffset;
+
+  // --- Top surface vertices ---
+  const topStart = 0;
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const lon = bounds.minLon + ((bounds.maxLon - bounds.minLon) * x) / (width - 1);
@@ -36,7 +40,6 @@ export function gridToMesh(grid, bounds, options = {}) {
       positions.push(px, py, pz);
       uvs.push(x / (width - 1), y / (height - 1));
 
-      // Simple color by elevation (terrain-ish ramp)
       const t = (grid[y][x] - minElevation) / elevationRange;
       const [r, g, b] = elevationColor(t);
       colors.push(r, g, b);
@@ -45,9 +48,10 @@ export function gridToMesh(grid, bounds, options = {}) {
     }
   }
 
+  // Top surface indices
   for (let y = 0; y < height - 1; y++) {
     for (let x = 0; x < width - 1; x++) {
-      const a = y * width + x;
+      const a = topStart + y * width + x;
       const b = a + 1;
       const c = a + width;
       const d = c + 1;
@@ -55,6 +59,74 @@ export function gridToMesh(grid, bounds, options = {}) {
       indices.push(a, c, b);
       indices.push(b, c, d);
     }
+  }
+
+  // --- Bottom vertices (flat plane at bottomY) ---
+  const bottomStart = positions.length / 3;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const lon = bounds.minLon + ((bounds.maxLon - bounds.minLon) * x) / (width - 1);
+      const lat = bounds.minLat + ((bounds.maxLat - bounds.minLat) * y) / (height - 1);
+
+      const px = (lon - bounds.minLon) * xScale - xSpanMeters / 2;
+      const pz = (lat - bounds.minLat) * zScale - zSpanMeters / 2;
+
+      positions.push(px, bottomY, pz);
+      uvs.push(x / (width - 1), y / (height - 1));
+      colors.push(0.3, 0.3, 0.3);
+      normals.push(0, -1, 0);
+    }
+  }
+
+  // Bottom indices (flipped winding so it faces down)
+  for (let y = 0; y < height - 1; y++) {
+    for (let x = 0; x < width - 1; x++) {
+      const a = bottomStart + y * width + x;
+      const b = a + 1;
+      const c = a + width;
+      const d = c + 1;
+
+      indices.push(a, b, c);
+      indices.push(b, d, c);
+    }
+  }
+
+  // --- Side walls ---
+  // Front edge (y=0): top vertex -> bottom vertex
+  for (let x = 0; x < width - 1; x++) {
+    const t0 = topStart + x;
+    const t1 = topStart + x + 1;
+    const b0 = bottomStart + x;
+    const b1 = bottomStart + x + 1;
+    indices.push(t0, b0, t1);
+    indices.push(t1, b0, b1);
+  }
+  // Right edge (x=width-1)
+  for (let y = 0; y < height - 1; y++) {
+    const t0 = topStart + y * width + (width - 1);
+    const t1 = topStart + (y + 1) * width + (width - 1);
+    const b0 = bottomStart + y * width + (width - 1);
+    const b1 = bottomStart + (y + 1) * width + (width - 1);
+    indices.push(t0, b0, t1);
+    indices.push(t1, b0, b1);
+  }
+  // Back edge (y=height-1)
+  for (let x = 0; x < width - 1; x++) {
+    const t0 = topStart + (height - 1) * width + x;
+    const t1 = topStart + (height - 1) * width + x + 1;
+    const b0 = bottomStart + (height - 1) * width + x;
+    const b1 = bottomStart + (height - 1) * width + x + 1;
+    indices.push(t0, t1, b0);
+    indices.push(t1, b1, b0);
+  }
+  // Left edge (x=0)
+  for (let y = 0; y < height - 1; y++) {
+    const t0 = topStart + y * width;
+    const t1 = topStart + (y + 1) * width;
+    const b0 = bottomStart + y * width;
+    const b1 = bottomStart + (y + 1) * width;
+    indices.push(t0, t1, b0);
+    indices.push(t1, b1, b0);
   }
 
   computeNormals(positions, normals, indices);

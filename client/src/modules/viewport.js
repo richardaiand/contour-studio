@@ -53,15 +53,12 @@ function applyThemeColors(theme = store.get('theme')) {
 
   const bg = cssColor('--bg');
   const border = cssColor('--panel-border');
-  const muted = cssColor('--muted');
 
   scene.background = new THREE.Color(bg);
-  scene.fog = new THREE.Fog(bg, 100, 500);
+  scene.fog = null;
 
   if (gridHelper) {
     gridHelper.material.color = new THREE.Color(border);
-    // GridHelper uses the same color for both main and sub lines in newer Three.js,
-    // but we can tint the material to a muted version for sub lines if supported.
   }
 }
 
