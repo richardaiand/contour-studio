@@ -1,12 +1,15 @@
 import { config } from '../config.js';
 
 const AIAND_FALLBACK_MODELS = [
+  { id: 'zai-org/glm-5.2', name: 'GLM 5.2' },
+  { id: 'moonshot/kimi-2.7', name: 'Kimi 2.7' },
   { id: 'deepseek-ai/deepseek-v4-pro', name: 'DeepSeek V4 Pro' },
   { id: 'deepseek-ai/deepseek-v4-flash', name: 'DeepSeek V4 Flash' },
-  { id: 'Qwen/Qwen2.5-72B-Instruct', name: 'Qwen 2.5 72B' },
-  { id: 'meta-llama/Llama-3.3-70B-Instruct', name: 'Llama 3.3 70B' },
-  { id: 'mistralai/Mixtral-8x22B-Instruct-v0.1', name: 'Mixtral 8x22B' },
-  { id: 'google/gemma-2-27b-it', name: 'Gemma 2 27B' },
+  { id: 'Qwen/qwen-3.6', name: 'Qwen 3.6' },
+  { id: 'google/gemma-4-31b', name: 'Gemma 4 31B' },
+  { id: 'zai-org/glm-5.1', name: 'GLM 5.1' },
+  { id: 'openai/gpt-oss-120b', name: 'GPT OSS 120B' },
+  { id: 'moonshot/kimi-2.6', name: 'Kimi 2.6' },
 ];
 
 export default async function (fastify) {

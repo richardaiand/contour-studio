@@ -2,14 +2,14 @@ import { $, api } from '../utils.js';
 import { store, setStatus } from '../store/index.js';
 
 const PRESETS = [
-  { name: 'AIand', endpoint: 'https://api.aiand.com/v1', model: 'deepseek-ai/deepseek-v4-pro', modelsEndpoint: '/providers/aiand/models' },
-  { name: 'OpenAI', endpoint: 'https://api.openai.com/v1', model: 'gpt-4o' },
-  { name: 'Anthropic', endpoint: 'https://api.anthropic.com/v1', model: 'claude-3-5-sonnet-20241022' },
-  { name: 'OpenRouter', endpoint: 'https://openrouter.ai/api/v1', model: 'openai/gpt-4o-mini' },
-  { name: 'Ollama', endpoint: 'http://localhost:11434/v1', model: 'llama3.1' },
+  { name: 'AIand', endpoint: 'https://api.aiand.com/v1', model: 'zai-org/glm-5.2', modelsEndpoint: '/providers/aiand/models' },
+  { name: 'OpenAI', endpoint: 'https://api.openai.com/v1', model: 'gpt-4o', singleModel: true },
+  { name: 'Anthropic', endpoint: 'https://api.anthropic.com/v1', model: 'claude-3-5-sonnet-20241022', singleModel: true },
+  { name: 'OpenRouter', endpoint: 'https://openrouter.ai/api/v1', model: 'openai/gpt-4o-mini', singleModel: true },
+  { name: 'Ollama', endpoint: 'http://localhost:11434/v1', model: 'llama3.1', singleModel: true },
 ];
 
-let aiandModels = [];
+let currentModels = [];
 
 export function initSettings() {
   $('settingsBtn')?.addEventListener('click', openSettings);
@@ -58,11 +58,14 @@ async function openSettings() {
   $('model').value = settings.providerModel || '';
   $('apiKey').value = '';
 
-  // Preselect AIand so the model dropdown loads
-  if (!$('endpoint').value) {
-    applyPreset(PRESETS[0], false);
-  } else {
+  const matchPreset = PRESETS.find((p) => p.endpoint === settings.providerEndpoint);
+  if (matchPreset) {
+    await applyPreset(matchPreset, false);
     updateModelSelect(settings.providerModel);
+  } else if (!$('endpoint').value) {
+    await applyPreset(PRESETS[0], false);
+  } else {
+    showCustomModelOnly(settings.providerModel);
   }
 
   $('settingsDlg').showModal();
@@ -73,25 +76,29 @@ async function applyPreset(preset, updateInputs = true) {
     $('endpoint').value = preset.endpoint;
   }
 
-  if (preset.modelsEndpoint) {
+  if (preset.singleModel) {
+    currentModels = [{ id: preset.model, name: preset.model }];
+    populateModelSelect();
+    if (updateInputs) {
+      $('modelSelect').value = preset.model;
+      $('model').style.display = 'none';
+      $('model').value = preset.model;
+    }
+  } else if (preset.modelsEndpoint) {
     await loadModels(preset.modelsEndpoint);
-  } else {
-    clearModels();
-    aiandModels = [];
-  }
-
-  if (updateInputs) {
-    updateModelSelect(preset.model);
+    if (updateInputs) {
+      updateModelSelect(preset.model);
+    }
   }
 }
 
 async function loadModels(endpoint) {
   try {
     const data = await api(endpoint);
-    aiandModels = data.models || [];
+    currentModels = data.models || [];
     populateModelSelect();
-  } catch (e) {
-    aiandModels = [];
+  } catch {
+    currentModels = [];
     clearModels();
   }
 }
@@ -103,28 +110,54 @@ function clearModels() {
 
 function populateModelSelect() {
   const select = $('modelSelect');
+  select.innerHTML = '';
+
+  if (currentModels.length <= 1) {
+    currentModels.forEach((m) => {
+      const opt = document.createElement('option');
+      opt.value = m.id;
+      opt.textContent = m.name || m.id;
+      select.appendChild(opt);
+    });
+  } else {
+    currentModels.forEach((m) => {
+      const opt = document.createElement('option');
+      opt.value = m.id;
+      opt.textContent = m.name || m.id;
+      select.appendChild(opt);
+    });
+    const customOpt = document.createElement('option');
+    customOpt.value = 'custom';
+    customOpt.textContent = 'Custom…';
+    select.appendChild(customOpt);
+  }
+}
+
+function showCustomModelOnly(currentModel) {
+  const select = $('modelSelect');
   select.innerHTML = '<option value="custom">Custom…</option>';
-  aiandModels.forEach((m) => {
-    const opt = document.createElement('option');
-    opt.value = m.id;
-    opt.textContent = m.name || m.id;
-    select.appendChild(opt);
-  });
+  select.value = 'custom';
+  $('model').style.display = 'block';
+  $('model').value = currentModel || '';
 }
 
 function updateModelSelect(currentModel) {
   const select = $('modelSelect');
   const input = $('model');
-  const match = aiandModels.find((m) => m.id === currentModel);
+  const match = currentModels.find((m) => m.id === currentModel);
 
   if (match) {
     select.value = match.id;
     input.style.display = 'none';
     input.value = match.id;
-  } else {
-    select.value = 'custom';
-    input.style.display = 'block';
-    input.value = currentModel || '';
+  } else if (currentModel) {
+    if (currentModels.length <= 1) {
+      showCustomModelOnly(currentModel);
+    } else {
+      select.value = 'custom';
+      input.style.display = 'block';
+      input.value = currentModel;
+    }
   }
 }
 
