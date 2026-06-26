@@ -53,11 +53,49 @@ export function initMap() {
     scrollZoom: { smooth: true, speed: 0.6 },
     touchZoomRotate: true,
     dragRotate: false,
+    dragPan: false,
     pitchWithRotate: false,
     maxPitch: 0,
   });
 
   map.addControl(new maplibregl.NavigationControl({ showCompass: false, visualizePitch: false }), 'top-right');
+
+  // Right-click drag to pan the map
+  let isPanning = false;
+  let panStart = null;
+
+  map.getCanvas().addEventListener('contextmenu', (e) => e.preventDefault());
+
+  map.on('mousedown', (e) => {
+    if (e.originalEvent.button !== 2) return; // right-click only
+    isPanning = true;
+    panStart = { x: e.originalEvent.clientX, y: e.originalEvent.clientY, center: map.getCenter() };
+    map.getCanvas().style.cursor = 'grabbing';
+  });
+
+  map.on('mousemove', (e) => {
+    if (!isPanning || !panStart) return;
+    const dx = e.originalEvent.clientX - panStart.x;
+    const dy = e.originalEvent.clientY - panStart.y;
+    const sensitivity = 0.5;
+    const center = panStart.center;
+    const lngOffset = -dx * sensitivity / Math.pow(2, map.getZoom());
+    const latOffset = dy * sensitivity / Math.pow(2, map.getZoom());
+    map.jumpTo({
+      center: [
+        Math.max(-180, Math.min(180, center.lng + lngOffset)),
+        Math.max(-85, Math.min(85, center.lat + latOffset)),
+      ],
+    });
+  });
+
+  map.on('mouseup', () => {
+    if (isPanning) {
+      isPanning = false;
+      panStart = null;
+      map.getCanvas().style.cursor = '';
+    }
+  });
 
   // Clamp latitude so the map doesn't scroll past the poles
   map.on('move', () => {
