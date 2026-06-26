@@ -90,7 +90,10 @@ export function renderDashboard(projects) {
     card.className = 'project-card';
     card.innerHTML = `
       <div class="project-card-thumb">
-        <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m8 3 4 8 5-5 5 15H2L8 3z"/></svg>
+        ${p.thumbnail
+          ? `<img src="${p.thumbnail}" alt="${escapeHtml(p.title)}" />`
+          : `<svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m8 3 4 8 5-5 5 15H2L8 3z"/></svg>`
+        }
       </div>
       <div class="project-card-body">
         <div class="project-card-title">${escapeHtml(p.title)}</div>

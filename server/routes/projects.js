@@ -12,6 +12,7 @@ function serializeProject(row) {
     center: parseJson(row.center_json),
     sourceInfo: parseJson(row.source_info_json),
     terrainData: parseJson(row.terrain_data_json),
+    thumbnail: row.thumbnail || null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -128,7 +129,7 @@ export default async function (fastify) {
       .get(req.params.id, req.user.userId);
     if (!project) throw new AppError('Project not found', 404, 'NOT_FOUND');
 
-    const { title, detailLevel, bounds, center, sourceInfo } = req.body;
+    const { title, detailLevel, bounds, center, sourceInfo, thumbnail } = req.body;
     const updates = [];
     const values = [];
 
@@ -151,6 +152,10 @@ export default async function (fastify) {
     if (sourceInfo !== undefined) {
       updates.push('source_info_json = ?');
       values.push(JSON.stringify(sourceInfo));
+    }
+    if (thumbnail !== undefined) {
+      updates.push('thumbnail = ?');
+      values.push(thumbnail);
     }
 
     if (updates.length === 0) return serializeProject(project);

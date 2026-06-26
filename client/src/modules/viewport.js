@@ -274,3 +274,14 @@ export function drawSelectionOutline(originalBounds, fetchBounds) {
 export function getTerrainMesh() {
   return terrainMesh;
 }
+
+export function captureStudioThumbnail() {
+  if (!renderer || !scene || !camera) return null;
+  renderer.render(scene, camera);
+  const canvas = renderer.domElement;
+  try {
+    return canvas.toDataURL('image/jpeg', 0.7);
+  } catch {
+    return null;
+  }
+}

@@ -601,3 +601,13 @@ export function computeBounds(center, sizeMeters = 1000) {
     maxLat: center.lat + latDelta / 2,
   };
 }
+
+export function captureMapThumbnail() {
+  if (!map) return null;
+  try {
+    const canvas = map.getCanvas();
+    return canvas.toDataURL('image/jpeg', 0.7);
+  } catch {
+    return null;
+  }
+}

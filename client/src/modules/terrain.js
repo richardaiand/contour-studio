@@ -1,7 +1,7 @@
 import { $, api } from '../utils.js';
 import { store, setStatus } from '../store/index.js';
-import { setTerrain, getTerrainMesh, drawSelectionOutline } from './viewport.js';
-import { computeBounds, getCenter, getMapCenter, sizeMetersFromInputs, getAreaInputs, formatSizeLabel, unitLimits } from './map.js';
+import { setTerrain, getTerrainMesh, drawSelectionOutline, captureStudioThumbnail } from './viewport.js';
+import { computeBounds, getCenter, getMapCenter, sizeMetersFromInputs, getAreaInputs, formatSizeLabel, unitLimits, captureMapThumbnail } from './map.js';
 import { loadProjects } from './projects.js';
 import { navigate } from '../router.js';
 
@@ -268,6 +268,18 @@ async function generateTerrain() {
         drawSelectionOutline(data.originalBounds, data.fetchBounds);
       }
       updateStats(data);
+      setTimeout(async () => {
+        const thumb = captureStudioThumbnail();
+        if (thumb && data.projectId) {
+          try {
+            await api(`/projects/${data.projectId}`, {
+              method: 'PATCH',
+              body: JSON.stringify({ thumbnail: thumb }),
+            });
+            loadProjects();
+          } catch {}
+        }
+      }, 500);
     });
     setLoading(false);
     const sizeLabel = formatSizeLabel();

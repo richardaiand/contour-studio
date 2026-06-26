@@ -7,7 +7,7 @@ import { initProjects, loadProjects, renderDashboard } from './modules/projects.
 import { initMap } from './modules/map.js';
 import { initViewport } from './modules/viewport.js';
 import { initTerrain } from './modules/terrain.js';
-import { initRouter, setInitialView, navigate } from './router.js';
+import { initRouter, setInitialView, navigate, getCurrentView } from './router.js';
 
 async function init() {
   initTheme();
@@ -85,10 +85,23 @@ async function init() {
     }
     const bounds = store.get('bounds');
     const center = store.get('center');
+    const body = { bounds, center };
+
+    const view = getCurrentView();
+    if (view === 'map') {
+      const { captureMapThumbnail } = await import('./modules/map.js');
+      const thumb = captureMapThumbnail();
+      if (thumb) body.thumbnail = thumb;
+    } else if (view === 'studio') {
+      const { captureStudioThumbnail } = await import('./modules/viewport.js');
+      const thumb = captureStudioThumbnail();
+      if (thumb) body.thumbnail = thumb;
+    }
+
     try {
       await api(`/projects/${project.id}`, {
         method: 'PATCH',
-        body: JSON.stringify({ bounds, center }),
+        body: JSON.stringify(body),
       });
       setStatus('Project saved.', 'ok');
     } catch (e) {
