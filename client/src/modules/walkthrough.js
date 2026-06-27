@@ -3,76 +3,94 @@
 
 const STEPS = [
   {
+    target: '.view-dashboard .header-actions',
+    title: 'Top Bar',
+    body: 'Here are your tools: Help (?), Theme toggle (sun/moon), and Settings (gear) where you can configure your AI key and sign out.',
+    view: 'dashboard',
+    position: 'left',
+  },
+  {
     target: '#newProjectBtnDashboard',
     title: 'Create a Project',
-    body: 'Click here to start a new project. You can also click any existing project card to reopen it.',
+    body: 'Click this button to create a new project. You\'ll be asked to name it, then you\'ll be taken to the map.',
     view: 'dashboard',
+    action: 'waitForNavigate:map',
+    hideNext: true,
   },
   {
     target: '#addressInput',
     title: 'Search a Location',
-    body: 'Type an address or place name here. Use arrow keys to browse suggestions, Enter to select.',
+    body: 'Type an address or place name here. Use arrow keys to browse suggestions, Enter to select. You can also click anywhere on the map to drop a marker.',
     view: 'map',
+    position: 'right',
+    clickThrough: true,
   },
   {
     target: '#detailSelector',
     title: 'Detail Level',
     body: 'Draft (90m, fastest), Standard (30m, balanced), or Survey (10m lidar, US only). Pick based on your needs.',
     view: 'map',
+    position: 'right',
+    clickThrough: true,
   },
   {
     target: '#areaValue',
     title: 'Area Size',
-    body: 'Set the size of your terrain area. Supports km, meters, miles, feet, and acres. The blue box on the map shows your selection.',
+    body: 'Set the size of your terrain area. Supports km, meters, miles, feet, and acres. The blue box on the map shows your selection. Use the dropdown to change units.',
     view: 'map',
-  },
-  {
-    target: '#dropCenterBtn',
-    title: 'Drop Center',
-    body: 'Places the selection box at the center of the current map view. You can also click anywhere on the map to move it.',
-    view: 'map',
+    position: 'right',
+    clickThrough: true,
+    extraTarget: '#areaUnit',
   },
   {
     target: '#generateBtn',
     title: 'Generate Terrain',
-    body: 'Creates a 3D terrain model from real elevation data. This may take a few seconds. You\'ll be taken to the Studio view when ready.',
+    body: 'Click Generate to create a 3D model from real elevation data. This may take a few seconds. You\'ll be taken to the Studio view when ready.',
     view: 'map',
+    action: 'waitForNavigate:studio',
+    hideNext: true,
   },
   {
     target: '#scene',
     title: '3D Terrain',
     body: 'Your terrain renders here with elevation colors. Green = low, white = high. Drag to orbit, scroll to zoom. The red arrow points true north.',
     view: 'studio',
+    position: 'right',
   },
   {
     target: '#toggleMapPreview',
     title: 'Site Map Preview',
     body: 'Click to see a preview of the map area you selected, so you can reference it without going back.',
     view: 'studio',
+    position: 'right',
   },
   {
     target: '.exports',
     title: 'Export',
     body: 'Download your terrain as OBJ, STL, or Heightmap for use in other 3D software like Blender, Unity, or Unreal.',
     view: 'studio',
+    position: 'right',
   },
   {
     target: '#versionList',
     title: 'Generation History',
     body: 'Each time you regenerate, the old version is saved here. Click the eye icon to load a previous version.',
     view: 'studio',
+    position: 'right',
   },
   {
     target: '#saveBtnStudio',
     title: 'Save',
     body: 'Save your project manually. Your work also auto-saves when you change the area or location.',
     view: 'studio',
+    position: 'bottom',
   },
   {
     target: '#settingsBtnStudio',
     title: 'Settings & Sign Out',
-    body: 'Click the gear icon to configure your AI provider API key. The Sign Out button is at the bottom of the settings dialog.',
+    body: 'Click the gear icon to configure your AI provider API key. The Sign Out button is at the bottom of the settings dialog. That\'s it — you\'re ready to go!',
     view: 'studio',
+    position: 'bottom',
   },
 ];
 
@@ -80,6 +98,7 @@ let overlay = null;
 let tooltip = null;
 let currentStep = 0;
 let isActive = false;
+let navigationListener = null;
 
 export function startWalkthrough() {
   if (isActive) return;
@@ -88,6 +107,7 @@ export function startWalkthrough() {
 
   overlay = document.createElement('div');
   overlay.className = 'walkthrough-overlay';
+  overlay.style.pointerEvents = 'none';
   document.body.appendChild(overlay);
 
   tooltip = document.createElement('div');
@@ -107,6 +127,10 @@ export function endWalkthrough() {
     tooltip.remove();
     tooltip = null;
   }
+  if (navigationListener) {
+    navigationListener();
+    navigationListener = null;
+  }
   localStorage.setItem('cs-walkthrough-done', '1');
 }
 
@@ -123,7 +147,7 @@ function showStep() {
       if (getCurrentView() !== step.view) {
         navigate(step.view);
       }
-      setTimeout(() => positionStep(step), 300);
+      setTimeout(() => positionStep(step), 400);
     });
   } else {
     positionStep(step);
@@ -152,19 +176,31 @@ function positionStep(step) {
   const total = currentStep + 1;
   const totalSteps = STEPS.length;
 
+  let nextLabel = 'Next';
+  if (step.hideNext) {
+    nextLabel = '';
+  } else if (total === totalSteps) {
+    nextLabel = 'Finish';
+  }
+
   tooltip.innerHTML = `
     <div class="walkthrough-progress">Step ${total} of ${totalSteps}</div>
     <h4>${step.title}</h4>
     <p>${step.body}</p>
     <div class="walkthrough-actions">
       <button class="ghost sm walkthrough-skip">Skip</button>
-      <button class="primary sm walkthrough-next">${total === totalSteps ? 'Finish' : 'Next'}</button>
+      ${nextLabel ? `<button class="primary sm walkthrough-next">${nextLabel}</button>` : ''}
     </div>
   `;
 
-  positionTooltip(highlight);
+  positionTooltip(highlight, step);
 
-  overlay.style.clipPath = `polygon(0% 0%, 0% 100%, ${highlight.left}px 100%, ${highlight.left}px ${highlight.top}px, ${highlight.left + highlight.width}px ${highlight.top}px, ${highlight.left + highlight.width}px ${highlight.top + highlight.height}px, ${highlight.left}px ${highlight.top + highlight.height}px, ${highlight.left}px 100%, 100% 100%, 100% 0%)`;
+  const l = highlight.left;
+  const t = highlight.top;
+  const r = l + highlight.width;
+  const b = t + highlight.height;
+
+  overlay.style.clipPath = `polygon(0% 0%, 0% 100%, ${l}px 100%, ${l}px ${t}px, ${r}px ${t}px, ${r}px ${b}px, ${l}px ${b}px, ${l}px 100%, 100% 100%, 100% 0%)`;
 
   tooltip.querySelector('.walkthrough-next')?.addEventListener('click', () => {
     currentStep++;
@@ -172,22 +208,58 @@ function positionStep(step) {
   });
 
   tooltip.querySelector('.walkthrough-skip')?.addEventListener('click', endWalkthrough);
+
+  if (step.action === 'waitForNavigate:studio') {
+    import('../router.js').then(({ navigate, getCurrentView }) => {
+      const checkNav = () => {
+        if (getCurrentView() === 'studio') {
+          currentStep++;
+          showStep();
+        } else {
+          setTimeout(checkNav, 500);
+        }
+      };
+      setTimeout(checkNav, 1000);
+    });
+  }
 }
 
-function positionTooltip(highlight) {
+function positionTooltip(highlight, step) {
   const tipRect = tooltip.getBoundingClientRect();
   const margin = 16;
   const vw = window.innerWidth;
   const vh = window.innerHeight;
 
-  let top = highlight.top + highlight.height + margin;
-  let left = highlight.left;
+  let top;
+  let left;
 
-  if (top + tipRect.height > vh - margin) {
-    top = highlight.top - tipRect.height - margin;
-    if (top < margin) top = margin;
+  switch (step.position) {
+    case 'right':
+      top = highlight.top;
+      left = highlight.left + highlight.width + margin;
+      if (left + tipRect.width > vw - margin) {
+        left = highlight.left - tipRect.width - margin;
+      }
+      break;
+    case 'left':
+      top = highlight.top;
+      left = highlight.left - tipRect.width - margin;
+      if (left < margin) {
+        left = highlight.left + highlight.width + margin;
+      }
+      break;
+    case 'bottom':
+      top = highlight.top + highlight.height + margin;
+      left = highlight.left;
+      break;
+    default:
+      top = highlight.top + highlight.height + margin;
+      left = highlight.left;
   }
 
+  if (top + tipRect.height > vh - margin) {
+    top = Math.max(margin, highlight.top - tipRect.height - margin);
+  }
   if (left + tipRect.width > vw - margin) {
     left = vw - tipRect.width - margin;
   }
