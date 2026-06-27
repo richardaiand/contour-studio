@@ -3,18 +3,18 @@
 
 const STEPS = [
   {
-    target: '.view-dashboard .header-actions',
+    target: '#settingsBtnDashboard',
     title: 'Top Bar',
     body: 'Here are your tools: Help (?), Theme toggle (sun/moon), and Settings (gear) where you can configure your AI key and sign out.',
     view: 'dashboard',
-    position: 'left',
+    position: 'bottom',
   },
   {
     target: '#newProjectBtnDashboard',
     title: 'Create a Project',
     body: 'Click this button to create a new project. You\'ll be asked to name it, then you\'ll be taken to the map.',
     view: 'dashboard',
-    action: 'waitForNavigate:map',
+    waitFor: 'navigate:map',
     hideNext: true,
   },
   {
@@ -23,7 +23,6 @@ const STEPS = [
     body: 'Type an address or place name here. Use arrow keys to browse suggestions, Enter to select. You can also click anywhere on the map to drop a marker.',
     view: 'map',
     position: 'right',
-    clickThrough: true,
   },
   {
     target: '#detailSelector',
@@ -31,7 +30,6 @@ const STEPS = [
     body: 'Draft (90m, fastest), Standard (30m, balanced), or Survey (10m lidar, US only). Pick based on your needs.',
     view: 'map',
     position: 'right',
-    clickThrough: true,
   },
   {
     target: '#areaValue',
@@ -39,15 +37,13 @@ const STEPS = [
     body: 'Set the size of your terrain area. Supports km, meters, miles, feet, and acres. The blue box on the map shows your selection. Use the dropdown to change units.',
     view: 'map',
     position: 'right',
-    clickThrough: true,
-    extraTarget: '#areaUnit',
   },
   {
     target: '#generateBtn',
     title: 'Generate Terrain',
     body: 'Click Generate to create a 3D model from real elevation data. This may take a few seconds. You\'ll be taken to the Studio view when ready.',
     view: 'map',
-    action: 'waitForNavigate:studio',
+    waitFor: 'navigate:studio',
     hideNext: true,
   },
   {
@@ -91,7 +87,7 @@ let overlay = null;
 let tooltip = null;
 let currentStep = 0;
 let isActive = false;
-let navigationListener = null;
+let waitTimer = null;
 
 export function startWalkthrough() {
   if (isActive) return;
@@ -112,6 +108,10 @@ export function startWalkthrough() {
 
 export function endWalkthrough() {
   isActive = false;
+  if (waitTimer) {
+    clearInterval(waitTimer);
+    waitTimer = null;
+  }
   if (overlay) {
     overlay.remove();
     overlay = null;
@@ -120,14 +120,11 @@ export function endWalkthrough() {
     tooltip.remove();
     tooltip = null;
   }
-  if (navigationListener) {
-    navigationListener();
-    navigationListener = null;
-  }
   localStorage.setItem('cs-walkthrough-done', '1');
 }
 
 function showStep() {
+  if (!isActive) return;
   if (currentStep >= STEPS.length) {
     endWalkthrough();
     return;
@@ -140,7 +137,7 @@ function showStep() {
       if (getCurrentView() !== step.view) {
         navigate(step.view);
       }
-      setTimeout(() => positionStep(step), 400);
+      setTimeout(() => positionStep(step), 500);
     });
   } else {
     positionStep(step);
@@ -148,6 +145,7 @@ function showStep() {
 }
 
 function positionStep(step) {
+  if (!isActive) return;
   const target = document.querySelector(step.target);
 
   if (!target) {
@@ -202,18 +200,25 @@ function positionStep(step) {
 
   tooltip.querySelector('.walkthrough-skip')?.addEventListener('click', endWalkthrough);
 
-  if (step.action === 'waitForNavigate:studio') {
-    import('../router.js').then(({ navigate, getCurrentView }) => {
-      const checkNav = () => {
-        if (getCurrentView() === 'studio') {
-          currentStep++;
-          showStep();
-        } else {
-          setTimeout(checkNav, 500);
-        }
-      };
-      setTimeout(checkNav, 1000);
-    });
+  if (step.waitFor) {
+    const [type, viewName] = step.waitFor.split(':');
+    if (type === 'navigate') {
+      import('../router.js').then(({ getCurrentView }) => {
+        if (waitTimer) clearInterval(waitTimer);
+        waitTimer = setInterval(() => {
+          if (!isActive) {
+            clearInterval(waitTimer);
+            return;
+          }
+          if (getCurrentView() === viewName) {
+            clearInterval(waitTimer);
+            waitTimer = null;
+            currentStep++;
+            showStep();
+          }
+        }, 300);
+      });
+    }
   }
 }
 
