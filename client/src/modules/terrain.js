@@ -1,7 +1,7 @@
 import { $, api } from '../utils.js';
 import { store, setStatus } from '../store/index.js';
-import { setTerrain, getTerrainMesh, drawSelectionOutline, captureStudioThumbnail } from './viewport.js';
-import { computeBounds, getCenter, getMapCenter, sizeMetersFromInputs, getAreaInputs, formatSizeLabel, unitLimits, captureMapThumbnail } from './map.js';
+import { setTerrain, drawSelectionOutline, captureStudioThumbnail } from './viewport.js';
+import { computeBounds, getCenter, sizeMetersFromInputs, getAreaInputs, formatSizeLabel, unitLimits } from './map.js';
 import { loadProjects } from './projects.js';
 import { navigate } from '../router.js';
 
@@ -368,8 +368,8 @@ async function analyzeMapUpload(e) {
     });
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ message: `HTTP ${res.status}` }));
-      throw new Error(err.message);
+      const err = await res.json().catch(() => ({ error: { message: `HTTP ${res.status}` } }));
+      throw new Error(err.error?.message || `HTTP ${res.status}`);
     }
 
     const data = await res.json();
@@ -424,7 +424,10 @@ async function exportTerrain(format) {
       body: JSON.stringify({ mesh: terrain.mesh, format, filename, projectId: terrain.projectId }),
     });
 
-    if (!res.ok) throw new Error(`Export ${res.status}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: { message: `Export ${res.status}` } }));
+      throw new Error(err.error?.message || `Export ${res.status}`);
+    }
 
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
@@ -464,9 +467,7 @@ export function renderVersionList(versions, currentTerrain) {
       v.mesh.positions?.length === currentTerrain.mesh.positions?.length;
     if (isActive) item.classList.add('active');
 
-    const detailLabel = v.sourceDescription || v.resolutionMeters
-      ? `${v.resolutionMeters}m res`
-      : 'Terrain';
+    const detailLabel = v.sourceDescription || (v.resolutionMeters ? `${v.resolutionMeters}m res` : 'Terrain');
 
     item.innerHTML = `
       <div class="version-item-info">

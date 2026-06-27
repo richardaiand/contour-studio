@@ -1,4 +1,4 @@
-import { $ } from './utils.js';
+import { $, api } from './utils.js';
 import { store, setStatus } from './store/index.js';
 import { initTheme, applyTheme } from './modules/theme.js';
 import { initAuth, restoreSession } from './modules/auth.js';
@@ -55,10 +55,7 @@ async function init() {
     }
   });
 
-  // Settings buttons (all views)
-  ['settingsBtn', 'settingsBtnDashboard', 'settingsBtnMap', 'settingsBtnStudio'].forEach((id) => {
-    $(id)?.addEventListener('click', () => $('settingsDlg')?.showModal());
-  });
+  // Settings buttons are wired in initSettings() — no duplicate registration here
 
   // Sign out button (inside settings dialog)
   $('signOutBtn')?.addEventListener('click', () => {

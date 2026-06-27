@@ -607,7 +607,9 @@ export function captureMapThumbnail() {
   return new Promise((resolve) => {
     if (!map) return resolve(null);
     try {
+      const timeout = setTimeout(() => resolve(null), 3000);
       map.once('render', () => {
+        clearTimeout(timeout);
         try {
           const canvas = map.getCanvas();
           resolve(canvas.toDataURL('image/jpeg', 0.7));
