@@ -8,6 +8,7 @@ import { initMap } from './modules/map.js';
 import { initViewport } from './modules/viewport.js';
 import { initTerrain } from './modules/terrain.js';
 import { initRouter, setInitialView, navigate, getCurrentView } from './router.js';
+import { startWalkthrough, shouldShowWalkthrough } from './modules/walkthrough.js';
 
 async function init() {
   initTheme();
@@ -85,6 +86,10 @@ async function init() {
     $(id)?.addEventListener('click', () => $('tutorialDlg')?.showModal());
   });
   $('closeTutorial')?.addEventListener('click', () => $('tutorialDlg')?.close());
+  $('startInteractiveTour')?.addEventListener('click', () => {
+    $('tutorialDlg')?.close();
+    startWalkthrough();
+  });
 
   // Edit Site button → back to map
   $('editSiteBtn')?.addEventListener('click', () => navigate('map'));
@@ -222,6 +227,9 @@ async function init() {
     localStorage.setItem('cs-signed-in', '1');
     setInitialView(true);
     setStatus('Ready. Search for a location to begin.', '');
+    if (shouldShowWalkthrough()) {
+      setTimeout(() => startWalkthrough(), 1000);
+    }
   } else {
     localStorage.removeItem('cs-signed-in');
     setInitialView(false);

@@ -1128,3 +1128,56 @@ dialog input {
   color: var(--text);
   font-weight: 600;
 }
+
+/* Interactive walkthrough */
+.walkthrough-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 9998;
+  pointer-events: auto;
+  transition: clip-path 0.3s ease;
+}
+
+.walkthrough-tooltip {
+  position: fixed;
+  z-index: 9999;
+  background: var(--panel);
+  border: 1px solid var(--primary);
+  border-radius: 10px;
+  padding: 16px 20px;
+  max-width: 320px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  transition: top 0.3s ease, left 0.3s ease;
+}
+
+.walkthrough-progress {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--primary);
+  margin-bottom: 6px;
+}
+
+.walkthrough-tooltip h4 {
+  margin: 0 0 6px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.walkthrough-tooltip p {
+  margin: 0 0 14px 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.walkthrough-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

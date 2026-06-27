@@ -50,6 +50,9 @@ async function handleSignUp() {
     localStorage.setItem('cs-signed-in', '1');
     navigate('dashboard');
     setStatus(`Account created. Welcome, ${data.user.username}.`, 'ok');
+    import('./walkthrough.js').then(({ startWalkthrough }) => {
+      setTimeout(() => startWalkthrough(), 1000);
+    });
   } catch (e) {
     $('authError').textContent = e.message;
   }
