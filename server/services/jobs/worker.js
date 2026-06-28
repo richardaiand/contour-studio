@@ -7,6 +7,7 @@ import { gridToMesh } from '../terrain/mesh.js';
 import { createProjectFromJob, updateProjectFromJob } from '../projects/db.js';
 import { fetchTnmDem, fetchTopoMapUrl } from '../topo/tnm.js';
 import { mergeGrids } from '../topo/merger.js';
+import { enhanceWithTopoMap } from '../topo/hybrid.js';
 
 const PROCESSORS = {
   'terrain:generate': processTerrainJob,
@@ -104,8 +105,25 @@ async function processTerrainJob(job, setProgress) {
     }
 
     try {
-      topoMapInfo = await fetchTopoMapUrl(bounds);
-    } catch {}
+      setProgress(40);
+      const meshBounds = dem.fetchBounds || bounds;
+      const hybridResult = await enhanceWithTopoMap(bounds, dem.grid, meshBounds, job.userId);
+      if (hybridResult) {
+        if (hybridResult.grid) {
+          dem.grid = hybridResult.grid;
+        }
+        topoMapInfo = hybridResult.topoMap;
+        dem.sources = [...new Set([...(dem.sources || []), 'ai-topo-hybrid'])];
+        console.log('AI topo map hybrid: enhanced grid with contour data');
+      } else if (hybridResult?.topoMap) {
+        topoMapInfo = hybridResult.topoMap;
+      }
+    } catch (err) {
+      console.warn(`AI topo map hybrid failed (non-fatal): ${err.message}`);
+      try {
+        topoMapInfo = await fetchTopoMapUrl(bounds);
+      } catch {}
+    }
   }
 
   setProgress(60);
