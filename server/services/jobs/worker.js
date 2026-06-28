@@ -5,6 +5,8 @@ import { claimPendingJob, updateJob } from './db.js';
 import { fetchDemForBounds, selectSourceDescription } from '../dem/router.js';
 import { gridToMesh } from '../terrain/mesh.js';
 import { createProjectFromJob, updateProjectFromJob } from '../projects/db.js';
+import { fetchTnmDem, fetchTopoMapUrl } from '../topo/tnm.js';
+import { mergeGrids } from '../topo/merger.js';
 
 const PROCESSORS = {
   'terrain:generate': processTerrainJob,
@@ -81,6 +83,31 @@ async function processTerrainJob(job, setProgress) {
   setProgress(10);
   const dem = await fetchDemForBounds(bounds, detailLevel);
 
+  setProgress(30);
+  let topoMapInfo = null;
+  if (bounds.minLat >= 24 && bounds.maxLat <= 50 && bounds.minLon >= -125 && bounds.maxLon <= -66) {
+    try {
+      const meshBounds = dem.fetchBounds || bounds;
+      const targetSize = dem.grid.length;
+      const tnmData = await fetchTnmDem(meshBounds, targetSize);
+      if (tnmData && tnmData.grid && tnmData.grid.length > 0) {
+        dem.grid = mergeGrids(dem.grid, tnmData.grid);
+        if (tnmData.resolutionMeters < dem.resolutionMeters) {
+          dem.resolutionMeters = tnmData.resolutionMeters;
+        }
+        dem.sources = [...new Set([...(dem.sources || []), 'usgs-tnm'])];
+        dem.attribution += '; ' + tnmData.attribution;
+        console.log(`TNM enhancement: merged ${tnmData.width}x${tnmData.height} grid at ${tnmData.resolutionMeters}m resolution`);
+      }
+    } catch (err) {
+      console.warn(`TNM enhancement failed (non-fatal): ${err.message}`);
+    }
+
+    try {
+      topoMapInfo = await fetchTopoMapUrl(bounds);
+    } catch {}
+  }
+
   setProgress(60);
   if (!dem.grid || dem.grid.length === 0) {
     throw new Error('DEM grid was empty');
@@ -113,6 +140,7 @@ async function processTerrainJob(job, setProgress) {
       expansionNote: dem.expansionNote || null,
       originalBounds: dem.originalBounds || bounds,
       fetchBounds: dem.fetchBounds || bounds,
+      topoMap: topoMapInfo,
       mesh: {
         width: mesh.width,
         height: mesh.height,
